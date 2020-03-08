@@ -1,0 +1,2 @@
+#Ignoring python cache
+src/data/__pycache__
