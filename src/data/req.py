@@ -1,5 +1,5 @@
 import json, requests
-from exception import *
+from exception import HTTPError
 class Req:
     def __init__(self, ipAddr=None):
         self.__ipAddr = ipAddr or 'localhost'
