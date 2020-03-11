@@ -1,5 +1,5 @@
 import json, requests
-from exception import MyError
+from exception import *
 class Req:
     def __init__(self, ipAddr=None):
         self.__ipAddr = ipAddr or 'localhost'
@@ -11,7 +11,7 @@ class Req:
         if(response.ok):
             return json.loads(response.text)
         else:
-            raise MyError('HTTP request error')
+            raise HTTPError('HTTP request error')
         
 
     def post(self, path, data):
@@ -19,4 +19,4 @@ class Req:
         if(response.ok):
             return json.loads(response.text)
         else:
-            raise MyError('HTTP request error')
+            raise HTTPError('HTTP request error')
