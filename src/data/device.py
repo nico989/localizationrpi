@@ -1,7 +1,7 @@
 from req import Req
 from exception import HTTPError
 
-class Kismetclient:
+class Device:
     def __init__(self, ipAddr):
         self.__req = Req(ipAddr)
         self.__fields = {'fields': ['kismet.device.base.commonname',
@@ -16,16 +16,23 @@ class Kismetclient:
                                     ]}
         self.__devices = []
 
-    def getDevices(self, path):
+    def get(self, path):
         try:
             self.__devices = self.__req.post('/devices/views/' +  path + '/devices.json', self.__fields)
-            print(self.__devices)
+            return self.__devices
         except HTTPError as error:
             return error
 
-    def findDevices(self, fields, filt):
+    def find(self, fields, filt):
         listDev = []
         for dev in self.__devices:
             if(dev[fields] == filt):
                 listDev.append(dev)
+        return listDev
+    
+    def filter(self, fields):
+        listDev = []
+        for dev in self.__devices:
+            for x in fields:
+                listDev.append(dev[x])
         return listDev
