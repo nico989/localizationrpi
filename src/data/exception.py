@@ -1,9 +1,9 @@
 class Error(Exception):
     def __init__(self, message):
-        self.__message = message
+        self._message = message
 
     def __str__(self):
-        return self.__message
+        return self._message
 
 class HTTPError(Error):
     def __init__(self, message):

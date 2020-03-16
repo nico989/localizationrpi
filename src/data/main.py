@@ -1,8 +1,8 @@
-from kismetclient import Kismetclient
+from interface import Interface
+from tkinter import *
 
 def main():
-    k = Kismetclient('192.168.1.69')
-    print(k.getDevices('phy-IEEE802.11'))
+    Interface().mainloop()
 
 if __name__ == "__main__":
     main()
