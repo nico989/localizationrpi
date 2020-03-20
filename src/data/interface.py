@@ -7,7 +7,7 @@ class Interface(Frame):
     def __init__(self):
         Frame.__init__(self)
         self.master.title('DEVICE VIEWS')
-        self.master.geometry('1600x800')
+        self.master.geometry('1200x600')
         self.master.rowconfigure(0, weight=1)
         self.master.columnconfigure(0, weight=1)
         self.grid(sticky=N+S+W+E)    
