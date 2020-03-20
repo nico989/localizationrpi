@@ -7,4 +7,8 @@ class Error(Exception):
 
 class HTTPError(Error):
     def __init__(self, message):
-        super().__init__(message)    
+        super().__init__(message) 
+
+class IPError(Error):
+    def __init__(self, message):
+        super().__init__(message)

@@ -1,8 +1,9 @@
 import json, requests
 from exception import HTTPError
+
 class Req:
-    def __init__(self, ipAddr):
-        self._ipAddr = ipAddr
+    def __init__(self, ipAddr=None):
+        self._ipAddr = ipAddr or 'localhost'
         self._head = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
         self._url = 'http://pi:caramella98@' + self._ipAddr +':2501'
 

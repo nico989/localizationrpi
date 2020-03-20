@@ -4,5 +4,5 @@ from tkinter import *
 def main():
     Interface().mainloop()
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
