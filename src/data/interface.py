@@ -25,7 +25,7 @@ class Interface(Frame):
         self._resizable()
 
     def _upLabel(self):
-        _labelName = ['Mac address', 'Manufacturer', 'Channel', 'Frequency [Hz]', 'Power [dBm]', 'Distance [m]']
+        _labelName = ['Mac address', 'Manufacturer', 'Channel', 'Frequency [Hz]', 'RSSI', 'Distance [m]']
         _listLabel = []
         for label in range(6):
             _listLabel.append(Label(self, text=_labelName[label], font=('Helvetica', 10), pady=5))
