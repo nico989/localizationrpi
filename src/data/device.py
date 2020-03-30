@@ -15,6 +15,8 @@ class Device:
                                     #'kismet.device.base.last_time', # timpestamp dell'ultima volta che ho visto il dispositivo
                                     #'kismet.device.base.commonname'
                                     ]}
+        self._K = 16.114
+        self._A = -46.0141
 
     def getAll(self):
         try:
@@ -55,3 +57,11 @@ class Device:
         for device in devices:
             listDev.append(device[field])
         return listDev
+
+    def calcDistance(self, power):
+        d = pow(10, (self._A-power)/self._K)
+        return self._truncate(d, 3)
+
+    def _truncate(self, n, decimals=0):
+        multiplier = 10 ** decimals
+        return int(n * multiplier) / multiplier

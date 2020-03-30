@@ -62,9 +62,11 @@ class Interface(Frame):
                 shows = dev.filterFields(clients, self._filterFields[box])
                 for show in shows:
                     self.__listbox[box].insert(END, show)
+            for s in shows:
+                self.__listbox[5].insert(END, dev.calcDistance(s))
         except IPError as error:
             messagebox.showerror(title='ERROR', message=error)
 
     def _cleanAll(self):
-        for box in range(5):
+        for box in range(6):
             self.__listbox[box].delete(0, END)
