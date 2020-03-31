@@ -1,5 +1,4 @@
 from interface import Interface
-from tkinter import *
 
 def main():
     Interface().mainloop()

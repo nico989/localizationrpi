@@ -64,8 +64,8 @@ class Interface(Frame):
                     self.__listbox[box].insert(END, show)
             for s in shows:
                 self.__listbox[5].insert(END, dev.calcDistance(s))
-        except IPError as error:
-            messagebox.showerror(title='ERROR', message=error)
+        except IPError as ip:
+            messagebox.showerror(title='ERROR', message=ip)
 
     def _cleanAll(self):
         for box in range(6):
