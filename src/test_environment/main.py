@@ -8,16 +8,25 @@ def main():
      value = input('Would you like to collect data? [y/n] ')
      n = 0
      while(value == 'y' and n<6):
-          val = data.collect() # collect data foreach distance
-          regression.addRSSI(val) # call AddRSSI of regression
+
+           # collect data foreach distance
+          val = data.collect()
+
+          # call AddRSSI of regression
+          regression.addRSSI(val) 
+          
           print(regression._RSSIAritmetica)
           print(regression._RSSIQuadratica)
           value = input('Would you still like to collect data?[y/n] ')
           n += 1
-     result = regression.linearRegression() # call regression
+     
+     # call regression
+     result = regression.linearRegression() 
      print(result)
-     p1 = Plot('DEVICE', '-log10(distance)', 'RSSI') # plot line above point with datas gave from regression
-     p1.pointsAndLine(regression.getLog10Distance(), regression.getRSSIAritmetica(), -1, 1, 100, result[0]['arithmeticK'], result[0]['arithmeticA'])
+
+     # plot line above point with data gave from regression
+     p1 = Plot('DEVICE', '-log10(distance)', 'RSSI') 
+     p1.pointsAndLine(regression.getLog10Distance(), regression.getRSSIAritmetica(), -1, 1, 100, result[0]['arithmeticK'], result[0]['arithmeticA']) 
 
 if __name__=="__main__":
     main()
