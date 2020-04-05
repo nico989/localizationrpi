@@ -63,7 +63,7 @@ class Interface(Frame):
                 for show in shows:
                     self.__listbox[box].insert(END, show)
             for s in shows:
-                self.__listbox[5].insert(END, dev.calcDistance(s))
+                self.__listbox[5].insert(END, dev.calcDistanceIstant(s))
         except IPError as ip:
             messagebox.showerror(title='ERROR', message=ip)
 

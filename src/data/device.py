@@ -64,7 +64,6 @@ class Device:
                 if device[self._fields['fields'][5]]=='Wi-Fi Client' and initialTime['kismet.system.timestamp.sec'] - device[self._fields['fields'][6]] < time :
                     clients.append(device)
             return clients
-            
         except:
             raise IPError('Wrong IP')
 
@@ -79,7 +78,7 @@ class Device:
             listDev.append(device[field])
         return listDev
 
-    def calcDistanceAccurate(self, macAddr, accuracy): # suggest for Access Point
+    def calcDistanceAccurate(self, macAddr, accuracy): # recommended for Access Point
         RSSI = []
         while(len(RSSI) < accuracy):
             lastVal = self.getDeviceByMAC(macAddr)[0]['kismet.common.signal.last_signal']
