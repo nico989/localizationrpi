@@ -1,72 +1,94 @@
 from tkinter import *
+from tkinter.ttk import *
 from tkinter import messagebox
 from device import Device
 from exception import IPError
 
 class Interface(Frame):
     def __init__(self):
-        Frame.__init__(self)
+        super().__init__()
         self.master.title('DEVICE VIEWS')
         self.master.geometry('1200x600')
         self.master.rowconfigure(0, weight=1)
         self.master.columnconfigure(0, weight=1)
         self.grid(sticky=N+S+W+E)    
-        self._ipVar = StringVar()
-        self.__listbox = []
         self._filterFields = ['kismet.device.base.macaddr',
                               'kismet.device.base.manuf',
                               'kismet.device.base.channel',
                               'kismet.device.base.frequency',
                               'kismet.common.signal.last_signal']
-        self._upLabel()
-        self._upListBox()
-        self._upButton()
-        self._upEntryArea()
+        self._table()
+        self._button()
+        self._entryArea()
+        self._label()
         self._resizable()
+        self._device = Device()
 
-    def _upLabel(self):
-        _labelName = ['Mac address', 'Manufacturer', 'Channel', 'Frequency [Hz]', 'RSSI', 'Distance [m]']
-        _listLabel = []
-        for label in range(6):
-            _listLabel.append(Label(self, text=_labelName[label], font=('Helvetica', 10), pady=5))
-            _listLabel[label].grid(row=0, column=label, sticky=N+S+W+E)
-        _product = Label(self, text=u'\u00A9 Product by Vinci Nicolò', font=('Comic Sans MS', 8))
-        _product.grid(row=2, column=5, padx=10, pady=5, sticky=SE)
-        
-    def _upListBox(self):
-        for lis in range(6):
-            self.__listbox.append(Listbox(self, bg='lightgray', xscrollcommand=True, yscrollcommand=True))
-            self.__listbox[lis].grid(row=1, column=lis, padx=10, sticky=N+S+W+E)
+    def _table(self):
+        self._tv = Treeview(self)
+        self._tv['columns'] = ('mac', 'channel', 'frequency', 'rssi', 'distance') 
+        self._labelName = ['Mac address', 'Channel', 'Frequency [Hz]', 'RSSI', 'Distance [m]']
+        self._tv.heading('#0', text='Manufacturer', anchor='w')
+        self._tv.column('#0', anchor='center', minwidth=120)     
+        for index, name in enumerate(self._tv['columns']):
+            self._tv.heading(name, text=self._labelName[index], anchor='center')
+            self._tv.column(name, anchor='center', minwidth=120)
+        for x in range (50):
+            self._tv.insert('', 'end', iid=x, text='First', values=('AC:75:1D:57:8A:D8', '10:10', 'Ok', 'ss', 'ddd',))
+        self._tv.grid(row=0, column=0, sticky = (N,S,W,E))
+
+    def _button(self):
+        self._buttonPane = Frame(self)
+        self._buttonPane.grid(row=1, column=0, sticky=W+E)
+
+        Style().configure('TButton', background='#808080')
+
+        self._inOut = StringVar()
+        self._inOut.set('INDOOR')
+
+        self._ipScanButton = Button(self._buttonPane, text='IP SCAN', takefocus=False, command=self._ipScan)
+        self._ipScanButton.grid(row=0, column=0, padx=10, sticky=E)
+        self._macSearchButton = Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=self._ipScan)
+        self._macSearchButton.grid(row=0, column=2, padx=10, sticky=E)
+        self._localizeButton = Button(self._buttonPane, text='LOCALIZE', takefocus=False)
+        self._localizeButton.grid(row=0, column=4)
+        self._indoorOutdoorButton = Button(self._buttonPane, textvariable=self._inOut, takefocus=False, command=self._indoorOutdoor)
+        self._indoorOutdoorButton.grid(row=0, column=5)
+        self._cleanAllButton = Button(self._buttonPane, text='CLEAN ALL', takefocus=False)
+        self._cleanAllButton.grid(row=0, column=6)
     
-    def _upEntryArea(self):
-        _ipArea = Entry(self, textvariable=self._ipVar, bg='#C0C0C0')
-        _ipArea.grid(row=2, column=1, padx=10, pady=5, sticky=W)
+    def _entryArea(self):
+        self._ip = StringVar()
+        self._ipEntry = Entry(self._buttonPane, textvariable=self._ip)
+        self._ipEntry.grid(row=0, column=1, sticky=W)
+        self._mac = StringVar()
+        self._macEntry = Entry(self._buttonPane, textvariable=self._mac)
+        self._macEntry.grid(row=0, column=3, sticky=W)
 
-    def _upButton(self):
-        _scan = Button(self, text='Insert IP and scan', bg='#808080', command=self._printDev)
-        _scan.grid(row=2, column=0, padx=10, pady=5, sticky=E)
-        _clean = Button(self, text='Clean all', bg='#808080', command=self._cleanAll)
-        _clean.grid(row=2, column=2, pady=5, sticky=W)
+    def _label(self):
+        self._product = Label(self._buttonPane, text=u'\u00A9 Product by Vinci Nicolò', font=('Comic Sans MS', 8))
+        self._product.grid(row=0, column=7, sticky=SE)
 
     def _resizable(self):
-        self.rowconfigure(1, weight=50)
-        self.rowconfigure(2, weight=1)
-        for column in range(6):
-            self.columnconfigure(column, weight=1)
+        self.rowconfigure(0, weight=50)
+        self.rowconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
+        for x in range(8):
+            self._buttonPane.columnconfigure(x, weight=1)
 
-    def _printDev(self):
+    def _ipScan(self):
         try:
-            dev = Device(self._ipVar.get())
-            clients = dev.getClients()
-            for box in range (5):
-                shows = dev.filterFields(clients, self._filterFields[box])
-                for show in shows:
-                    self.__listbox[box].insert(END, show)
-            for s in shows:
-                self.__listbox[5].insert(END, dev.calcDistanceIstant(s))
+            pass
         except IPError as ip:
             messagebox.showerror(title='ERROR', message=ip)
 
-    def _cleanAll(self):
-        for box in range(6):
-            self.__listbox[box].delete(0, END)
+     def _macSearch(self):
+        pass
+
+    def _indoorOutdoor(self):
+        if self._inOut.get() == 'INDOOR':
+            self._device.setOutdoor()
+            self._inOut.set('OUTDOOR')
+        elif self._inOut.get() == 'OUTDOOR':
+            self._device.setIndoor()
+            self._inOut.set('INDOOR')

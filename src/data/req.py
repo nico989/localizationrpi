@@ -1,16 +1,25 @@
 import json, requests
 
 class Req:
-    def __init__(self, ipAddr=None):
-        self._ipAddr = ipAddr or 'localhost'
+    def __init__(self):
+        self._ipAddr = 'localhost'
         self._head = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
-        self._url = 'http://pi:caramella98@' + self._ipAddr +':2501'
+        self._users = 'http://pi:caramella98@'
+        self._port = 2501
+
+    def setIp(self, ip):
+        self._ipAddr = ip
+    
+    def getIp(self):
+        return self._ipAddr
 
     def get(self, path, params):
-        response = requests.get(url=self._url+path, params=params)
+        _url = self._users + self._ipAddr + ':' + self._port + path
+        response = requests.get(url=_url, params=params)
         return json.loads(response.text)
 
     def post(self, path, data):
+        _url = self._users + self._ipAddr + ':' + self._port + path
         dat = 'json=' + json.dumps(data)
-        response = requests.post(url=self._url+path, headers=self._head, data=dat)
+        response = requests.post(url=_url, headers=self._head, data=dat)
         return json.loads(response.text)
