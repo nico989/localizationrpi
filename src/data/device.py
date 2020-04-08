@@ -53,7 +53,7 @@ class Device(Req):
                     clients.append(device)
             return clients
         except:
-            raise IPError('Wrong IP')
+           raise IPError('Wrong IP')
 
     def getClientsLastTimeSec(self, time):
         try:

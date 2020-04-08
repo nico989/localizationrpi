@@ -12,8 +12,8 @@ class Interface(Frame):
         self.master.rowconfigure(0, weight=1)
         self.master.columnconfigure(0, weight=1)
         self.grid(sticky=N+S+W+E)    
-        self._filterFields = ['kismet.device.base.macaddr',
-                              'kismet.device.base.manuf',
+        self._filterFields = ['kismet.device.base.manuf',            
+                              'kismet.device.base.macaddr',                              
                               'kismet.device.base.channel',
                               'kismet.device.base.frequency',
                               'kismet.common.signal.last_signal']
@@ -33,8 +33,6 @@ class Interface(Frame):
         for index, name in enumerate(self._tv['columns']):
             self._tv.heading(name, text=self._labelName[index], anchor='center')
             self._tv.column(name, anchor='center', minwidth=120)
-        for x in range (50):
-            self._tv.insert('', 'end', iid=x, text='First', values=('AC:75:1D:57:8A:D8', '10:10', 'Ok', 'ss', 'ddd',))
         self._tv.grid(row=0, column=0, sticky = (N,S,W,E))
 
     def _button(self):
@@ -48,13 +46,13 @@ class Interface(Frame):
 
         self._ipScanButton = Button(self._buttonPane, text='IP SCAN', takefocus=False, command=self._ipScan)
         self._ipScanButton.grid(row=0, column=0, padx=10, sticky=E)
-        self._macSearchButton = Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=self._ipScan)
+        self._macSearchButton = Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=self._macSearch)
         self._macSearchButton.grid(row=0, column=2, padx=10, sticky=E)
         self._localizeButton = Button(self._buttonPane, text='LOCALIZE', takefocus=False)
         self._localizeButton.grid(row=0, column=4)
         self._indoorOutdoorButton = Button(self._buttonPane, textvariable=self._inOut, takefocus=False, command=self._indoorOutdoor)
         self._indoorOutdoorButton.grid(row=0, column=5)
-        self._cleanAllButton = Button(self._buttonPane, text='CLEAN ALL', takefocus=False)
+        self._cleanAllButton = Button(self._buttonPane, text='CLEAN ALL', takefocus=False, command=self._cleanAll)
         self._cleanAllButton.grid(row=0, column=6)
     
     def _entryArea(self):
@@ -78,12 +76,27 @@ class Interface(Frame):
 
     def _ipScan(self):
         try:
-            pass
+            self._cleanAll()
+            self._device.setIp(self._ipEntry.get())
+            devices = self._device.getClients()
+            for index,device in enumerate(devices):
+                self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
+                                                                  device[self._filterFields[3]], device[self._filterFields[4]]))
         except IPError as ip:
-            messagebox.showerror(title='ERROR', message=ip)
+           messagebox.showerror(title='ERROR', message=ip)
 
-     def _macSearch(self):
-        pass
+    def _macSearch(self):
+        for item in self._tv.get_children():
+           if (self._tv.item(item, 'values')[0]) == self._macEntry.get():
+               text = self._tv.item(item, 'text')
+               values = self._tv.item(item, 'values')
+               self._cleanAll()
+               self._tv.insert('', 'end', iid=0, text=text, values=values)
+               return
+        messagebox.showerror(title='ERROR', message='It does not find')
+
+    def _cleanAll(self):
+        self._tv.delete(*self._tv.get_children())
 
     def _indoorOutdoor(self):
         if self._inOut.get() == 'INDOOR':
