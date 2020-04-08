@@ -3,6 +3,7 @@ from tkinter.ttk import *
 from tkinter import messagebox
 from device import Device
 from exception import IPError
+from mathOperation import convertIntoGhz
 
 class Interface(Frame):
     def __init__(self):
@@ -27,7 +28,7 @@ class Interface(Frame):
     def _table(self):
         self._tv = Treeview(self)
         self._tv['columns'] = ('mac', 'channel', 'frequency', 'rssi', 'distance') 
-        self._labelName = ['Mac address', 'Channel', 'Frequency [Hz]', 'RSSI', 'Distance [m]']
+        self._labelName = ['Mac address', 'Channel', 'Frequency [GHz]', 'RSSI', 'Distance [m]']
         self._tv.heading('#0', text='Manufacturer', anchor='w')
         self._tv.column('#0', anchor='center', minwidth=120)     
         for index, name in enumerate(self._tv['columns']):
@@ -81,7 +82,8 @@ class Interface(Frame):
             devices = self._device.getClients()
             for index,device in enumerate(devices):
                 self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
-                                                                  device[self._filterFields[3]], device[self._filterFields[4]]))
+                                                                  convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
+                                                                  self._device.calcDistanceIstant(device[self._filterFields[4]])))
         except IPError as ip:
            messagebox.showerror(title='ERROR', message=ip)
 

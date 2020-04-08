@@ -7,3 +7,8 @@ def arithmeticMean(values):
 def truncate(n, decimals=0):
     multiplier = 10 ** decimals
     return int(n * multiplier) / multiplier
+
+def convertIntoGhz(value):
+    frequency = value*10**-6
+    return truncate(frequency, 3)
+    
