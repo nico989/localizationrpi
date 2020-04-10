@@ -1,7 +1,7 @@
-from interface import Interface
+from mainInterface import MainInterface
 
 def main():
-    Interface().mainloop()
+    MainInterface().mainloop()
     
 if __name__=="__main__":
     main()
