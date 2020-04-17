@@ -16,10 +16,12 @@ class Req:
     def get(self, path, params):
         _url = self._users + self._ipAddr + ':' + str(self._port) + path
         response = requests.get(url=_url, params=params)
-        return json.loads(response.text)
+        if response.ok:
+            return json.loads(response.text)
 
     def post(self, path, data):
         _url = self._users + self._ipAddr + ':' + str(self._port) + path
         dat = 'json=' + json.dumps(data)
         response = requests.post(url=_url, headers=self._head, data=dat)
-        return json.loads(response.text)
+        if response.ok:
+            return json.loads(response.text)

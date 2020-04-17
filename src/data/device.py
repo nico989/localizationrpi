@@ -11,7 +11,7 @@ class Device(Req):
                                     'kismet.device.base.manuf',
                                     'kismet.device.base.channel',
                                     'kismet.device.base.frequency',
-                                    'kismet.device.base.signal/kismet.common.signal.last_signal',
+                                    'kismet.device.base.signal/kismet.common.signal.last_signal', 
                                     'kismet.device.base.type',
                                     'kismet.device.base.last_time'
                                     ]}
@@ -42,7 +42,7 @@ class Device(Req):
         try:
             return self.post(self._paths[3] + macAddr + self._paths[4] , self._fields)
         except:
-            raise IPError('Wrong IP')
+           raise IPError('Wrong IP')
 
     def getClients(self):
         try:
@@ -78,24 +78,14 @@ class Device(Req):
             listDev.append(device[field])
         return listDev
 
-    def calcDistanceAccurate(self, macAddr, accuracy): # recommended for Access Point
-        RSSI = []
-        while(len(RSSI) < accuracy):
-            lastVal = self.getDeviceByMAC(macAddr)[0]['kismet.common.signal.last_signal']
-            if self._triggerPacks(RSSI, lastVal):
-                RSSI.append(lastVal)
-        power = arithmeticMean(RSSI)
-        return(self.calcDistanceIstant(power))
+    def calcDistanceAccurate(self, dev, sample):
+        sampleRSSI = [dev['kismet.common.signal.last_signal']]
+        for s in range (sample-1):
+            device = self.getDeviceByMAC(dev[self._fields['fields'][0]])
+            sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
+        meanPower = arithmeticMean(sampleRSSI)
+        return(self.calcDistanceIstant(meanPower))
     
     def calcDistanceIstant(self, power):
         distance = pow(10, (self._A-power)/self._K)
         return truncate(distance, 3)
-
-    def _triggerPacks(self, values, lastVal):
-        if not values:
-            return True
-        else:
-            if values[-1] == lastVal:
-                return False
-            else:
-                return True
