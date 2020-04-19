@@ -7,10 +7,10 @@ class Req:
         self._users = 'http://pi:caramella98@'
         self._port = 2501
 
-    def setIp(self, ip):
+    def setIP(self, ip):
         self._ipAddr = ip
     
-    def getIp(self):
+    def getIP(self):
         return self._ipAddr
 
     def get(self, path, params):
@@ -18,6 +18,8 @@ class Req:
         response = requests.get(url=_url, params=params)
         if response.ok:
             return json.loads(response.text)
+        else:
+            return
 
     def post(self, path, data):
         _url = self._users + self._ipAddr + ':' + str(self._port) + path
@@ -25,3 +27,5 @@ class Req:
         response = requests.post(url=_url, headers=self._head, data=dat)
         if response.ok:
             return json.loads(response.text)
+        else: 
+            return

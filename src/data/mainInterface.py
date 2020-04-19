@@ -1,19 +1,16 @@
 import tkinter as tk             
 from devicePage import DevicePage
 from localizePage import LocalizePage
-import asyncio
 
 class MainInterface(tk.Tk):
-
-    def __init__(self, async_loop):
+    def __init__(self):
         tk.Tk.__init__(self)
         self.frames = {}
         for F in (DevicePage, LocalizePage):
             pageName = F.__name__
-            frame = F(controller=self, async_loop=async_loop)
+            frame = F(controller=self)
             self.frames[pageName] = frame
             frame.grid(row=0, column=0, sticky='N'+'S'+'E'+'W')
-
         self.showFrame('DevicePage')
 
     def showFrame(self, pageName):

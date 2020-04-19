@@ -4,10 +4,10 @@ from tkinter import messagebox
 from device import Device
 from exception import IPError
 from mathOperation import convertIntoGhz
-import threading, asyncio
+import threading
 
 class DevicePage(tk.Frame):
-    def __init__(self, controller, async_loop):
+    def __init__(self, controller):
         tk.Frame.__init__(self)
         self._controller = controller
         self._controller.title('DEVICE VIEWS')
@@ -15,13 +15,13 @@ class DevicePage(tk.Frame):
         self._controller.rowconfigure(0, weight=1)
         self._controller.columnconfigure(0, weight=1)
         self.grid(sticky='N'+'S'+'W'+'E') 
-        self._async_loop = async_loop
         self._filterFields = ['kismet.device.base.manuf',            
                               'kismet.device.base.macaddr',                              
                               'kismet.device.base.channel',
                               'kismet.device.base.frequency',
                               'kismet.common.signal.last_signal']
         self._device = Device()
+        self._isAliveThread = False
         self._table()
         self._button()
         self._entryArea()
@@ -48,7 +48,7 @@ class DevicePage(tk.Frame):
         self._inOut = tk.StringVar()
         self._inOut.set('INDOOR')
 
-        self._ipScanButton = ttk.Button(self._buttonPane, text='IP SCAN', takefocus=False, command=lambda: self.do_tasks(self._async_loop))
+        self._ipScanButton = ttk.Button(self._buttonPane, text='IP SCAN', takefocus=False, command=lambda: self._threadIPScan())
         self._ipScanButton.grid(row=0, column=0, padx=10, sticky='E')
         self._macSearchButton = ttk.Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=self._macSearch)
         self._macSearchButton.grid(row=0, column=2, padx=10, sticky='E')
@@ -77,16 +77,32 @@ class DevicePage(tk.Frame):
         self.columnconfigure(0, weight=1)
         for x in range(8):
             self._buttonPane.columnconfigure(x, weight=1)
+    
+    def _threadIPScan(self):
+        if self._isAliveThread:
+            messagebox.showerror(title='Error', message='Another thread is running')
+        else:
+            t = threading.Thread(target=self._ipScan, daemon=True)
+            t.start()   
 
-    async def _ipScan(self):
+    def _ipScan(self):
         try:
+            self._isAliveThread = True
             self._cleanAll()
             self._controller.setIPToLocalizePage(self._ipEntry.get())
-            self._device.setIp(self._ipEntry.get())
-            await self._task()
-
+            self._device.setIP(self._ipEntry.get())
+            devices = self._device.getClientsLastTimeSec(5*60)
+            for index,device in enumerate(devices):
+                distance = self._device.calcDistanceAccurate(device, 20)
+                if distance:
+                    self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
+                                                                    convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
+                                                                    self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
+            self._isAliveThread = False
+            messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + 'devices') 
         except IPError as error:
-            tk.messagebox.showerror(title='ERROR', message=error)
+            self._isAliveThread = False
+            messagebox.showerror(title='ERROR', message=error)       
 
     def _macSearch(self):
         for item in self._tv.get_children():
@@ -96,7 +112,7 @@ class DevicePage(tk.Frame):
                self._cleanAll()
                self._tv.insert('', 'end', iid=0, text=text, values=values)
                return
-        tk.messagebox.showerror(title='ERROR', message='It does not find')
+        messagebox.showerror(title='ERROR', message='It does not find')
 
     def _indoorOutdoor(self):
         if self._inOut.get() == 'INDOOR':
@@ -108,19 +124,3 @@ class DevicePage(tk.Frame):
 
     def _cleanAll(self):
         self._tv.delete(*self._tv.get_children())
-
-    def _asyncio_thread(self, async_loop):
-        async_loop.run_until_complete(self._ipScan())
-
-    def do_tasks(self, async_loop):
-        """ Button-Event-Handler starting the asyncio part. """
-        threading.Thread(target=self._asyncio_thread, args=(self._async_loop,)).start()
-        print('async')
-
-    async def _task(self):
-         devices = self._device.getClients()
-         for index,device in enumerate(devices):
-                        self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
-                                                                  convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
-                                                                  self._device.calcDistanceIstant(device[self._filterFields[4]]), 
-                                                                  self._device.calcDistanceAccurate(device, 20)))

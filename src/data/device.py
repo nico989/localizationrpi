@@ -1,6 +1,7 @@
 from req import Req
 from exception import IPError
 from mathOperation import arithmeticMean, truncate
+import requests
 
 class Device(Req):
     def __init__(self):
@@ -55,13 +56,13 @@ class Device(Req):
         except:
            raise IPError('Wrong IP')
 
-    def getClientsLastTimeSec(self, time):
+    def getClientsLastTimeSec(self, seconds):
         try:
             clients = []
             initialTime = self.get(self._paths[2], None)
-            devices = self._req.post(self._paths[0], self._fields)
+            devices = self.post(self._paths[0], self._fields)
             for device in devices:
-                if device[self._fields['fields'][5]]=='Wi-Fi Client' and initialTime['kismet.system.timestamp.sec'] - device[self._fields['fields'][6]] < time :
+                if device[self._fields['fields'][5]]=='Wi-Fi Client' and initialTime['kismet.system.timestamp.sec'] - device[self._fields['fields'][6]] < seconds :
                     clients.append(device)
             return clients
         except:
@@ -79,13 +80,22 @@ class Device(Req):
         return listDev
 
     def calcDistanceAccurate(self, dev, sample):
-        sampleRSSI = [dev['kismet.common.signal.last_signal']]
-        for s in range (sample-1):
-            device = self.getDeviceByMAC(dev[self._fields['fields'][0]])
-            sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-        meanPower = arithmeticMean(sampleRSSI)
-        return(self.calcDistanceIstant(meanPower))
+        if self.checkDeviceByMac(dev[self._fields['fields'][0]]):
+            sampleRSSI = [dev['kismet.common.signal.last_signal']]
+            for s in range (sample-1):
+                device = self.getDeviceByMAC(dev[self._fields['fields'][0]]) 
+                sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
+            meanPower = arithmeticMean(sampleRSSI)
+            return(self.calcDistanceIstant(meanPower))
+        else:
+            return
     
     def calcDistanceIstant(self, power):
         distance = pow(10, (self._A-power)/self._K)
         return truncate(distance, 3)
+    
+    def checkDeviceByMac(self, macAddr):
+        if self.getDeviceByMAC(macAddr):
+            return True
+        else:
+            return False

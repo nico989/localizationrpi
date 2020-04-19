@@ -10,7 +10,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 class LocalizePage(tk.Frame):
 
-    def __init__(self, controller, async_loop):
+    def __init__(self, controller):
         tk.Frame.__init__(self)
         self._controller = controller
         self._controller.rowconfigure(0, weight=1)
@@ -25,7 +25,7 @@ class LocalizePage(tk.Frame):
         self._resizable()
     
     def setIPAddr(self, value):
-        self._device.setIp(value)
+        self._device.setIP(value)
 
     def _graph(self):
         pass
@@ -64,7 +64,7 @@ class LocalizePage(tk.Frame):
         for x in range(6):
             self._buttonPane.columnconfigure(x, weight=1)
 
-    #TODO ASYNC
+    #TODO THREAD
     def _getPos(self):
         try:
             if self._counterPos.get() == 'GET FIRST POSITION':
@@ -87,7 +87,6 @@ class LocalizePage(tk.Frame):
                 distances = []
                 for device in devices:
                     distances.append(self._device.calcDistanceAccurate(device, 20))
-                self._distances[index] = distances
-                  
+                self._distances[index] = distances    
         except IPError as error:
-            tk.messagebox.showerror(title='Error', message=error)
+            messagebox.showerror(title='Error', message=error)
