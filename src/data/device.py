@@ -80,22 +80,17 @@ class Device(Req):
         return listDev
 
     def calcDistanceAccurate(self, dev, sample):
-        if self.checkDeviceByMac(dev[self._fields['fields'][0]]):
-            sampleRSSI = [dev['kismet.common.signal.last_signal']]
-            for s in range (sample-1):
-                device = self.getDeviceByMAC(dev[self._fields['fields'][0]]) 
+        sampleRSSI = []
+        for s in range (sample):
+            device = self.getDeviceByMAC(dev[self._fields['fields'][0]])
+            if device: 
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            meanPower = arithmeticMean(sampleRSSI)
-            return(self.calcDistanceIstant(meanPower))
-        else:
-            return
+            else:
+                return
+        meanPower = arithmeticMean(sampleRSSI)
+        return(self.calcDistanceIstant(meanPower))
+      
     
     def calcDistanceIstant(self, power):
         distance = pow(10, (self._A-power)/self._K)
         return truncate(distance, 3)
-    
-    def checkDeviceByMac(self, macAddr):
-        if self.getDeviceByMAC(macAddr):
-            return True
-        else:
-            return False

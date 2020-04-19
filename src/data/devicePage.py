@@ -1,6 +1,5 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter import messagebox
 from device import Device
 from exception import IPError
 from mathOperation import convertIntoGhz
@@ -50,13 +49,13 @@ class DevicePage(tk.Frame):
 
         self._ipScanButton = ttk.Button(self._buttonPane, text='IP SCAN', takefocus=False, command=lambda: self._threadIPScan())
         self._ipScanButton.grid(row=0, column=0, padx=10, sticky='E')
-        self._macSearchButton = ttk.Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=self._macSearch)
+        self._macSearchButton = ttk.Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=lambda: self._macSearch())
         self._macSearchButton.grid(row=0, column=2, padx=10, sticky='E')
         self._localizeButton = ttk.Button(self._buttonPane, text='LOCALIZE', takefocus=False, command=lambda: self._controller.showFrame('LocalizePage'))
         self._localizeButton.grid(row=0, column=4)
-        self._indoorOutdoorButton = ttk.Button(self._buttonPane, textvariable=self._inOut, takefocus=False, command=self._indoorOutdoor)
+        self._indoorOutdoorButton = ttk.Button(self._buttonPane, textvariable=self._inOut, takefocus=False, command=lambda: self._indoorOutdoor())
         self._indoorOutdoorButton.grid(row=0, column=5)
-        self._cleanAllButton = ttk.Button(self._buttonPane, text='CLEAN ALL', takefocus=False, command=self._cleanAll)
+        self._cleanAllButton = ttk.Button(self._buttonPane, text='CLEAN ALL', takefocus=False, command=lambda: self._cleanAll())
         self._cleanAllButton.grid(row=0, column=6)
     
     def _entryArea(self):
@@ -80,7 +79,7 @@ class DevicePage(tk.Frame):
     
     def _threadIPScan(self):
         if self._isAliveThread:
-            messagebox.showerror(title='Error', message='Another thread is running')
+            tk.messagebox.showerror(title='Error', message='Another thread is running')
         else:
             t = threading.Thread(target=self._ipScan, daemon=True)
             t.start()   
@@ -91,7 +90,8 @@ class DevicePage(tk.Frame):
             self._cleanAll()
             self._controller.setIPToLocalizePage(self._ipEntry.get())
             self._device.setIP(self._ipEntry.get())
-            devices = self._device.getClientsLastTimeSec(5*60)
+            #devices = self._device.getClientsLastTimeSec(5*60)
+            devices = self._device.getClients()
             for index,device in enumerate(devices):
                 distance = self._device.calcDistanceAccurate(device, 20)
                 if distance:
@@ -99,10 +99,10 @@ class DevicePage(tk.Frame):
                                                                     convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
                                                                     self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
             self._isAliveThread = False
-            messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + 'devices') 
+            tk.messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + 'devices') 
         except IPError as error:
             self._isAliveThread = False
-            messagebox.showerror(title='ERROR', message=error)       
+            tk.messagebox.showerror(title='ERROR', message=error)       
 
     def _macSearch(self):
         for item in self._tv.get_children():
@@ -112,7 +112,7 @@ class DevicePage(tk.Frame):
                self._cleanAll()
                self._tv.insert('', 'end', iid=0, text=text, values=values)
                return
-        messagebox.showerror(title='ERROR', message='It does not find')
+        tk.messagebox.showerror(title='ERROR', message='It does not find')
 
     def _indoorOutdoor(self):
         if self._inOut.get() == 'INDOOR':

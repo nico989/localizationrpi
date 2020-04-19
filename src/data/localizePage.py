@@ -36,57 +36,69 @@ class LocalizePage(tk.Frame):
 
         ttk.Style().configure('TButton', background='#808080')
 
-        self._counterPos = tk.StringVar()
-        self._counterPos.set('GET FIRST POSITION')
-
-        self._locMacButton = ttk.Button(self._buttonPane, text='LOCALIZE FROM MAC ADDRESS', takefocus=False)
-        self._locMacButton.grid(row=0, column=0, padx=10, pady=5, sticky='E')       
-        self._getPosButton = ttk.Button(self._buttonPane, textvariable=self._counterPos, takefocus=False, command=self._getPos)
-        self._getPosButton.grid(row=0, column=2, padx=10, pady=5)
-        self._locAll = ttk.Button(self._buttonPane, text='LOCALIZE ALL POSSIBILE DEVICE', takefocus=False)
-        self._locAll.grid(row=0, column=3, padx=10, pady=5)
+        self._saveIPButton = ttk.Button(self._buttonPane, text='SAVE IP', takefocus=False, command=lambda: self._saveIP())
+        self._saveIPButton.grid(row=0, column=0, padx=10, pady=5, sticky='E')
+        self._locMacLabel = tk.StringVar()
+        self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
+        self._locMacButton = ttk.Button(self._buttonPane, textvariable=self._locMacLabel, takefocus=False, command=lambda: self._getPosByMAC())
+        self._locMacButton.grid(row=0, column=2, padx=10, pady=5, sticky='E')
+        self._locAllLabel = tk.StringVar()
+        self._locAllLabel.set('LOCALIZE ALL POSSIBLE DEVICES')       
+        self._locAll = ttk.Button(self._buttonPane, textvariable=self._locAllLabel, takefocus=False)
+        self._locAll.grid(row=0, column=4, padx=10, pady=5)
         self._returnToDevicePage = ttk.Button(self._buttonPane, text='GO TO DEVICE PAGE', takefocus=False, command=lambda: self._controller.showFrame('DevicePage'))
-        self._returnToDevicePage.grid(row=0, column=4, padx=10, pady=5)
+        self._returnToDevicePage.grid(row=0, column=5, padx=10, pady=5)
 
     def _entryArea(self):
         self._mac = tk.StringVar()
         self._macEntry = ttk.Entry(self._buttonPane, textvariable=self._mac)
-        self._macEntry.grid(row=0, column=1, pady=5, sticky='W')
+        self._macEntry.grid(row=0, column=3, pady=5, sticky='W')
+        self._ip = tk.StringVar()
+        self._ipEntry = ttk.Entry(self._buttonPane, textvariable=self._ip)
+        self._ipEntry.grid(row=0, column=1, pady=5, sticky='W')
 
     def _label(self):
         self._product = ttk.Label(self._buttonPane, text=u'\u00A9 Product by Vinci Nicolò', font=('Comic Sans MS', 8))
-        self._product.grid(row=0, column=5, pady=5, sticky='SE')
+        self._product.grid(row=0, column=6, pady=5, sticky='SE')
         
     def _resizable(self):
         self.rowconfigure(0, weight=1)
         #self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
-        for x in range(6):
+        for x in range(7):
             self._buttonPane.columnconfigure(x, weight=1)
 
+    def _saveIP(self):
+        self._device.setIP(self._ipEntry.get())
+
     #TODO THREAD
-    def _getPos(self):
+    def _getPosByMAC(self):
         try:
-            if self._counterPos.get() == 'GET FIRST POSITION':
-                index = 'first'
-                self._counterPos.set('GET SECOND POSITION')
-            elif self._counterPos.get() == 'GET SECOND POSITION':
-                index = 'second'
-                self._counterPos.set('GET THIRD POSITION')
-            elif self._counterPos.get() == 'GET THIRD POSITION':
-                index = 'third'
-                self._counterPos.set('CALCULATE POSITION')
-            elif self._counterPos.get() == 'CALCULATE POSITION':
-                index = ''
-                self._counterPos.set('GET FIRST POSITION')
-            if index == '':
-                #TODO: calc positions con self._distances{}
-                pass
-            else:
-                devices = self._device.getClients()
-                distances = []
-                for device in devices:
-                    distances.append(self._device.calcDistanceAccurate(device, 20))
-                self._distances[index] = distances    
+            task = self._updateLabel(self._locMacLabel, 'LOCALIZE FROM MAC ADDRESS')
+            if task:
+                if task == 4:
+                    #TODO:calc position
+                    pass
+                else:
+                    device = self._device.getDeviceByMAC(self._macEntry.get())
+                    if device:
+                        self._distances[task] = self._device.calcDistanceAccurate(device[0], 20)                   
         except IPError as error:
-            messagebox.showerror(title='Error', message=error)
+            tk.messagebox.showerror(title='Error', message=error)
+
+    def _updateLabel(self, variableLabel, initialValue):
+        if variableLabel.get() == initialValue:
+            variableLabel.set('GET FIRST POSITION')
+            return 
+        elif variableLabel.get() == 'GET FIRST POSITION':
+            variableLabel.set('GET SECOND POSITION')
+            return 1
+        elif variableLabel.get() == 'GET SECOND POSITION':
+            variableLabel.set('GET THIRD POSITION')
+            return 2
+        elif variableLabel.get() == 'GET THIRD POSITION':
+            variableLabel.set('CALCULATE POSITION')
+            return 3
+        elif variableLabel.get() == 'CALCULATE POSITION':
+            variableLabel.set(initialValue)
+            return 4

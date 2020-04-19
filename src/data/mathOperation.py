@@ -1,3 +1,6 @@
+import math
+from scipy.optimize import fsolve
+
 def arithmeticMean(values):
     tot = 0
     for value in values:
@@ -11,4 +14,9 @@ def truncate(n, decimals=0):
 def convertIntoGhz(value):
     frequency = value*10**-6
     return truncate(frequency, 3)
+
+def localize(x1,y1,z1,r1,x2,y2,z2,r2,x3,y3,z3,r3):
+    sfera1 = (x-x1)**2 + (y-y1)**2 + (z-z1)**2 - r1**2
+    sfera2 = (x-x2)**2 + (y-y2)**2 + (z-z2)**2 - r2**2
+    sfera3 = (x-x3)**2 + (y-y3)**2 + (z-z3)**2 - r3**2
     
