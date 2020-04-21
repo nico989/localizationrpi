@@ -86,7 +86,7 @@ class DevicePage(tk.Frame):
                 #devices = self._device.getClientsLastTimeSec(5*60)
                 devices = self._device.getClients()
                 for index,device in enumerate(devices):
-                    t = threading.Thread(target=self._fillTable, args=(1, device[0],), daemon=True)
+                    t = threading.Thread(target=self._fillTable, args=(index, device,), daemon=True)
                     t.start()
                 tk.messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + ' devices')
             else:
