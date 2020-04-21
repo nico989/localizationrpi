@@ -1,5 +1,4 @@
 from device import Device
-from exception import IPError
 import tkinter as tk  
 import tkinter.ttk as ttk
 import matplotlib
@@ -83,8 +82,8 @@ class LocalizePage(tk.Frame):
                     device = self._device.getDeviceByMAC(self._macEntry.get())
                     if device:
                         self._distances[task] = self._device.calcDistanceAccurate(device[0], 20)                   
-        except IPError as error:
-            tk.messagebox.showerror(title='Error', message=error)
+        except:
+            tk.messagebox.showerror(title='Error', message='error')
 
     def _updateLabel(self, variableLabel, initialValue):
         if variableLabel.get() == initialValue:

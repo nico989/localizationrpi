@@ -1,7 +1,6 @@
 from req import Req
-from exception import IPError
-from mathOperation import arithmeticMean, truncate
-import requests
+from exception import HTTPError
+from mathOperation import quadraticMean, arithmeticMean, truncate
 
 class Device(Req):
     def __init__(self):
@@ -27,46 +26,32 @@ class Device(Req):
         self._K = 0.0
         self._A = 0.0
 
-    def getAll(self):
-        try:
-            return self.post(self._paths[0], self._fields)
-        except:
-            raise IPError('Wrong IP')
+    def getAll(self):    
+        return self.post(self._paths[0], self._fields)
         
     def getAccessPoint(self):
-        try:
-            return self.post(self._paths[1], self._fields)
-        except:
-            raise IPError('Wrong IP')
+            return self.post(self._paths[1], self._fields)   
 
     def getDeviceByMAC(self, macAddr):
-        try:
-            return self.post(self._paths[3] + macAddr + self._paths[4] , self._fields)
-        except:
-           raise IPError('Wrong IP')
+        return self.post(self._paths[3] + macAddr + self._paths[4] , self._fields)
 
     def getClients(self):
-        try:
-            clients = []
-            devices = self.post(self._paths[0], self._fields)
-            for device in devices:
-                if device[self._fields['fields'][5]]=='Wi-Fi Client':
-                    clients.append(device)
-            return clients
-        except:
-           raise IPError('Wrong IP')
+        clients = []
+        devices = self.post(self._paths[0], self._fields)
+        for device in devices:
+            if device[self._fields['fields'][5]]=='Wi-Fi Client':
+                clients.append(device)
+        return clients
+
 
     def getClientsLastTimeSec(self, seconds):
-        try:
-            clients = []
-            initialTime = self.get(self._paths[2], None)
-            devices = self.post(self._paths[0], self._fields)
-            for device in devices:
-                if device[self._fields['fields'][5]]=='Wi-Fi Client' and initialTime['kismet.system.timestamp.sec'] - device[self._fields['fields'][6]] < seconds :
-                    clients.append(device)
-            return clients
-        except:
-            raise IPError('Wrong IP')
+        clients = []
+        initialTime = self.get(self._paths[2], None)
+        devices = self.post(self._paths[0], self._fields)
+        for device in devices:
+            if device[self._fields['fields'][5]]=='Wi-Fi Client' and initialTime['kismet.system.timestamp.sec'] - device[self._fields['fields'][6]] < seconds :
+                clients.append(device)
+        return clients
 
     def findDevices(self, devices, field, find):
         for device in devices:
@@ -78,19 +63,20 @@ class Device(Req):
         for device in devices:
             listDev.append(device[field])
         return listDev
-
-    def calcDistanceAccurate(self, dev, sample):
-        sampleRSSI = []
-        for s in range (sample):
-            device = self.getDeviceByMAC(dev[self._fields['fields'][0]])
-            if device: 
-                sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            else:
-                return
-        meanPower = arithmeticMean(sampleRSSI)
-        return(self.calcDistanceIstant(meanPower))
-      
     
     def calcDistanceIstant(self, power):
         distance = pow(10, (self._A-power)/self._K)
         return truncate(distance, 3)
+
+    def calcDistanceAccurate(self, macAddr, sample):
+        try:
+            sampleRSSI = []
+            for s in range (sample):
+                device = self.getDeviceByMAC(macAddr)
+                sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
+            meanPower = quadraticMean(sampleRSSI)
+            return self.calcDistanceIstant(meanPower)
+        except HTTPError as http:
+            print(http)
+            return
+    

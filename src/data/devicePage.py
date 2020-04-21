@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from device import Device
-from exception import IPError
+from exception import HTTPError, ConnError
 from mathOperation import convertIntoGhz
 import threading
 
@@ -20,7 +20,7 @@ class DevicePage(tk.Frame):
                               'kismet.device.base.frequency',
                               'kismet.common.signal.last_signal']
         self._device = Device()
-        self._isAliveThread = False
+        self._semaphore = threading.Semaphore(value=1)
         self._table()
         self._button()
         self._entryArea()
@@ -47,7 +47,7 @@ class DevicePage(tk.Frame):
         self._inOut = tk.StringVar()
         self._inOut.set('INDOOR')
 
-        self._ipScanButton = ttk.Button(self._buttonPane, text='IP SCAN', takefocus=False, command=lambda: self._threadIPScan())
+        self._ipScanButton = ttk.Button(self._buttonPane, text='IP SCAN', takefocus=False, command=lambda: self._ipScan())
         self._ipScanButton.grid(row=0, column=0, padx=10, sticky='E')
         self._macSearchButton = ttk.Button(self._buttonPane, text='MAC SEARCH', takefocus=False, command=lambda: self._macSearch())
         self._macSearchButton.grid(row=0, column=2, padx=10, sticky='E')
@@ -76,33 +76,34 @@ class DevicePage(tk.Frame):
         self.columnconfigure(0, weight=1)
         for x in range(8):
             self._buttonPane.columnconfigure(x, weight=1)
-    
-    def _threadIPScan(self):
-        if self._isAliveThread:
-            tk.messagebox.showerror(title='Error', message='Another thread is running')
-        else:
-            t = threading.Thread(target=self._ipScan, daemon=True)
-            t.start()   
 
     def _ipScan(self):
         try:
-            self._isAliveThread = True
-            self._cleanAll()
-            self._controller.setIPToLocalizePage(self._ipEntry.get())
-            self._device.setIP(self._ipEntry.get())
-            #devices = self._device.getClientsLastTimeSec(5*60)
-            devices = self._device.getClients()
-            for index,device in enumerate(devices):
-                distance = self._device.calcDistanceAccurate(device, 20)
-                if distance:
-                    self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
-                                                                    convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
-                                                                    self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
-            self._isAliveThread = False
-            tk.messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + 'devices') 
-        except IPError as error:
-            self._isAliveThread = False
-            tk.messagebox.showerror(title='ERROR', message=error)       
+            if len(threading.enumerate()) == 1:
+                self._cleanAll()
+                self._controller.setIPToLocalizePage(self._ipEntry.get())
+                self._device.setIP(self._ipEntry.get())
+                #devices = self._device.getClientsLastTimeSec(5*60)
+                devices = self._device.getClients()
+                for index,device in enumerate(devices):
+                    t = threading.Thread(target=self._fillTable, args=(1, device[0],), daemon=True)
+                    t.start()
+                tk.messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + ' devices')
+            else:
+                tk.messagebox.showerror(title='ERROR', message='Another scan is running') 
+        except HTTPError as http:
+            tk.messagebox.showerror(title='ERROR', message=http)
+        except ConnError as conn:
+            tk.messagebox.showerror(title='ERROR', message=conn)
+
+    def _fillTable(self, index, device):
+        self._semaphore.acquire()
+        distance = self._device.calcDistanceAccurate(device[self._filterFields[1]], 20)
+        if distance:
+            self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
+                                                            convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
+                                                            self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
+        self._semaphore.release()
 
     def _macSearch(self):
         for item in self._tv.get_children():
