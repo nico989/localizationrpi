@@ -32,16 +32,19 @@ class DevicePage(tk.Frame):
         self._tv = ttk.Treeview(self, columns=self._columns, show='headings')
         self._labelName = ['Manufacturer', 'Mac address', 'Channel', 'Frequency [GHz]', 'RSSI', 'Distance Istant [m]', 'Distance Accurate [m]']
         for index, col in enumerate(self._columns):
-            self._tv.heading(col, text=self._labelName[index], anchor='center', command=lambda _col=col:self._sort(_col, False))
+            if index > 4:
+                self._tv.heading(col, text=self._labelName[index], anchor='center', command=lambda _col=col:self._sort(index,_col, False))
+            else:
+                self._tv.heading(col, text=self._labelName[index], anchor='center')
             self._tv.column(col, anchor='center', minwidth=120)
         self._tv.grid(row=0, column=0, sticky = ('N','S','W','E'))
 
-    def _sort(self, col, reverse):
+    def _sort(self, index, col, reverse):
         l = [(self._tv.set(k, col), k) for k in self._tv.get_children('')]
-        l.sort(reverse=reverse)
+        l.sort(key=lambda t: float(t[0]), reverse=reverse)            
         for index, (val, k) in enumerate(l):
             self._tv.move(k, '', index)
-        self._tv.heading(col, command=lambda: self._sort(col, not reverse))
+        self._tv.heading(col, command=lambda: self._sort(index, col, not reverse))
 
     def _button(self):
         self._buttonPane = tk.Frame(self)
