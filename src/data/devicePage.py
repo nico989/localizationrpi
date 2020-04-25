@@ -10,7 +10,7 @@ class DevicePage(tk.Frame):
         tk.Frame.__init__(self)
         self._controller = controller
         self._controller.title('DEVICE VIEWS')
-        self._controller.geometry('1500x700')
+        self._controller.geometry('1500x800')
         self._controller.rowconfigure(0, weight=1)
         self._controller.columnconfigure(0, weight=1)
         self.grid(sticky='N'+'S'+'W'+'E') 
@@ -28,15 +28,20 @@ class DevicePage(tk.Frame):
         self._resizable()
 
     def _table(self):
-        self._tv = ttk.Treeview(self)
-        self._tv['columns'] = ('mac', 'channel', 'frequency', 'rssi', 'distanceIstant', 'distanceAccurate') 
-        self._labelName = ['Mac address', 'Channel', 'Frequency [GHz]', 'RSSI', 'Distance Istant [m]', 'Distance Accurate [m]']
-        self._tv.heading('#0', text='Manufacturer', anchor='w')
-        self._tv.column('#0', anchor='center', minwidth=120)     
-        for index, name in enumerate(self._tv['columns']):
-            self._tv.heading(name, text=self._labelName[index], anchor='center')
-            self._tv.column(name, anchor='center', minwidth=120)
+        self._columns = ('manuf', 'mac', 'channel', 'frequency', 'rssi', 'distanceIstant', 'distanceAccurate') 
+        self._tv = ttk.Treeview(self, columns=self._columns, show='headings')
+        self._labelName = ['Manufacturer', 'Mac address', 'Channel', 'Frequency [GHz]', 'RSSI', 'Distance Istant [m]', 'Distance Accurate [m]']
+        for index, col in enumerate(self._columns):
+            self._tv.heading(col, text=self._labelName[index], anchor='center', command=lambda _col=col:self._sort(_col, False))
+            self._tv.column(col, anchor='center', minwidth=120)
         self._tv.grid(row=0, column=0, sticky = ('N','S','W','E'))
+
+    def _sort(self, col, reverse):
+        l = [(self._tv.set(k, col), k) for k in self._tv.get_children('')]
+        l.sort(reverse=reverse)
+        for index, (val, k) in enumerate(l):
+            self._tv.move(k, '', index)
+        self._tv.heading(col, command=lambda: self._sort(col, not reverse))
 
     def _button(self):
         self._buttonPane = tk.Frame(self)
@@ -91,6 +96,7 @@ class DevicePage(tk.Frame):
                 tk.messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + ' devices')
             else:
                 tk.messagebox.showerror(title='ERROR', message='Another scan is running') 
+            
         except HTTPError as http:
             tk.messagebox.showerror(title='ERROR', message=http)
         except ConnError as conn:
@@ -99,19 +105,18 @@ class DevicePage(tk.Frame):
     def _fillTable(self, index, device):
         self._semaphore.acquire()
         distance = self._device.calcDistanceAccurate(device[self._filterFields[1]], 20)
-        if distance:
-            self._tv.insert('', 'end', iid=index, text=device[self._filterFields[0]], values=(device[self._filterFields[1]], device[self._filterFields[2]], 
-                                                            convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
-                                                            self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
+        if distance is not None:
+            self._tv.insert('', 'end', iid=index, values=(device[self._filterFields[0]], device[self._filterFields[1]], device[self._filterFields[2]], 
+                                                        convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
+                                                        self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
         self._semaphore.release()
 
     def _macSearch(self):
         for item in self._tv.get_children():
-           if (self._tv.item(item, 'values')[0]) == self._macEntry.get():
-               text = self._tv.item(item, 'text')
+           if (self._tv.item(item, 'values')[1]) == self._macEntry.get():
                values = self._tv.item(item, 'values')
                self._cleanAll()
-               self._tv.insert('', 'end', iid=0, text=text, values=values)
+               self._tv.insert('', 'end', iid=0, values=values)
                return
         tk.messagebox.showerror(title='ERROR', message='It does not find')
 
