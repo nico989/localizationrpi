@@ -32,7 +32,6 @@ def localize(x1,y1,z1,r1,x2,y2,z2,r2,x3,y3,z3,r3):
     sphere2 = sympy.Eq((x-x2)**2+(y-y2)**2+(z-z2)**2,r2**2)
     sphere3 = sympy.Eq((x-x3)**2+(y-y3)**2+(z-z3)**2,r3**2)
     results = sympy.solve([sphere1,sphere2,sphere3],(x,y,z))
-    print('Results:\n' + str(results))
     coordinates = ([], [], [])
     if len(results) is not 0:
         for result in results:
@@ -43,16 +42,11 @@ def localize(x1,y1,z1,r1,x2,y2,z2,r2,x3,y3,z3,r3):
                 else:
                     return
     else:
-        return
-    print('All coordinates:\n' + str(coordinates))
     meanPoint = (arithmeticMean(coordinates[0]), arithmeticMean(coordinates[1]), arithmeticMean(coordinates[2]))
-    print('Point coordinates: ' + str(meanPoint))
     allDistanceFromMeanPoint = []
     for result in results:
         allDistanceFromMeanPoint.append(distanceBetweenTwoPoints(meanPoint, result))
-    print(allDistanceFromMeanPoint)
     radius = truncate(max(allDistanceFromMeanPoint), 3)
-    print('Radius: ' + str(radius))
     res = {
         'radius': radius,
         'meanPoint': meanPoint,

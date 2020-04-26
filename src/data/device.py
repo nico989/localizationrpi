@@ -75,15 +75,10 @@ class Device(Req):
             for s in range (sample):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            sampleRSSI.append(device[0]['kismet.common.signal.max_signal'])
-            print(sampleRSSI)
             meanPower = arithmeticMean(sampleRSSI)
-            print(meanPower)
             return self.calcDistanceIstant(meanPower)
         except HTTPError as http:
-            print(http)
             return
         except ConnError as conn:
-            print(conn)
             return
     
