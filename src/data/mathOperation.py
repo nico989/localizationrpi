@@ -1,7 +1,7 @@
 import math, sympy
 
 def distanceBetweenTwoPoints(p1, p2):
-    distance = pow((p1[0]-p2[0])**2+(p1[1]-p2[1])**2+(p1[2]+p2[2]**2), 1/2)
+    distance = pow((p1[0]-p2[0])**2+(p1[1]-p2[1])**2+(p1[2]+p2[2])**2, 1/2)
     return distance
 
 def arithmeticMean(values):
@@ -34,13 +34,16 @@ def localize(x1,y1,z1,r1,x2,y2,z2,r2,x3,y3,z3,r3):
     results = sympy.solve([sphere1,sphere2,sphere3],(x,y,z))
     print('Results:\n' + str(results))
     coordinates = ([], [], [])
-    for result in results:
-        for i in range(3):
-            if result[i].is_real:
-                approximateValue = truncate(result[i].evalf(), 3)
-                coordinates[i].append(approximateValue)
-            else:
-                return
+    if len(results) is not 0:
+        for result in results:
+            for i in range(3):
+                if result[i].is_real:
+                    approximateValue = truncate(result[i].evalf(), 3)
+                    coordinates[i].append(approximateValue)
+                else:
+                    return
+    else:
+        return
     print('All coordinates:\n' + str(coordinates))
     meanPoint = (arithmeticMean(coordinates[0]), arithmeticMean(coordinates[1]), arithmeticMean(coordinates[2]))
     print('Point coordinates: ' + str(meanPoint))

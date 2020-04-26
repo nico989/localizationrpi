@@ -6,7 +6,8 @@ matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
-from mathOperation import localize
+from mathOperation import localize, distanceBetweenTwoPoints, truncate
+from exception import ConnError
 
 class LocalizePage(tk.Frame):
     def __init__(self, controller):
@@ -16,9 +17,10 @@ class LocalizePage(tk.Frame):
         self._controller.columnconfigure(0, weight=1)
         self.grid(sticky='N'+'S'+'W'+'E')
         self._filterFields = ['kismet.device.base.macaddr', 'kismet.common.signal.last_signal']
-        self._device = Device()    
-        self._distances = {1:1, 2:1, 3:1} 
-        self._initialPositions = [(0,0,0), (1,0,0), (1,1,0)]
+        self._device = Device() 
+        self._distances = {} 
+        self._initialPositions = []
+        self._macAddr = '' #D8:CE:3A:F4:C5:19
         self._graph()     
         self._button()
         self._entryArea()
@@ -53,12 +55,8 @@ class LocalizePage(tk.Frame):
         self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
         self._locMacButton = ttk.Button(self._buttonPane, textvariable=self._locMacLabel, takefocus=False, command=lambda: self._getPosByMAC())
         self._locMacButton.grid(row=0, column=2, padx=10, pady=10, sticky='E')
-        self._locAllLabel = tk.StringVar()
-        self._locAllLabel.set('LOCALIZE ALL POSSIBLE DEVICES')       
-        self._locAllButton = ttk.Button(self._buttonPane, textvariable=self._locAllLabel, takefocus=False, command=lambda: self._fillGraph())
-        self._locAllButton.grid(row=0, column=4, padx=10, pady=10, sticky='E')
-        self._returnToDevicePage = ttk.Button(self._buttonPane, text='GO TO DEVICE PAGE', takefocus=False, command=lambda: self._controller.showFrame('DevicePage'))
-        self._returnToDevicePage.grid(row=0, column=6, padx=10, pady=10)
+        self._returnToDevicePageButton = ttk.Button(self._buttonPane, text='GO TO DEVICE PAGE', takefocus=False, command=lambda: self._returnToDevicePage())
+        self._returnToDevicePageButton.grid(row=0, column=4, padx=10, pady=10)
 
     def _entryArea(self):
         self._mac = tk.StringVar()
@@ -67,50 +65,59 @@ class LocalizePage(tk.Frame):
         self._ip = tk.StringVar()
         self._ipEntry = ttk.Entry(self._buttonPane, textvariable=self._ip)
         self._ipEntry.grid(row=0, column=1, pady=10, sticky='W')
-        self._locAll = tk.StringVar()
-        self._locAllEntry = ttk.Entry(self._buttonPane, textvariable=self._locAll)
-        self._locAllEntry.grid(row=0, column=5, pady=10, sticky='W')
 
     def _label(self):
         self._product = ttk.Label(self._buttonPane, text=u'\u00A9 Product by Vinci Nicolò', font=('Comic Sans MS', 8))
-        self._product.grid(row=0, column=7, pady=10, sticky='SE')
+        self._product.grid(row=0, column=5, pady=10, sticky='SE')
         
     def _resizable(self):
         self.rowconfigure(0, weight=50)
         self.rowconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
-        for x in range(8):
+        for x in range(6):
             self._buttonPane.columnconfigure(x, weight=1)
 
     def _saveIP(self):
         self._device.setIP(self._ipEntry.get())
 
-    #TODO THREAD
+    def _returnToDevicePage(self):
+        self._initialPositions.clear()
+        self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
+        self._locMacLabel.set('LOCALIZE ALL POSSIBLE ADDRESS')
+        self._controller.showFrame('DevicePage')
+
     def _getPosByMAC(self):
-        macAddr = ''
-        task = self._updateLabel(self._locMacLabel, 'LOCALIZE FROM MAC ADDRESS')
-        if task is None:
-            macAddr = self._macEntry.get()
-        elif task == 4:
-            result = localize(self._initialPositions[0][0], self._initialPositions[0][1], self._initialPositions[0][2], self._distances[1],
-                                        self._initialPositions[1][0], self._initialPositions[1][1], self._initialPositions[1][2], self._distances[2],
-                                        self._initialPositions[2][0], self._initialPositions[2][1], self._initialPositions[2][2], self._distances[3]
-                                        )
-            if result is None:
-                tk.messagebox.showinfo(title='INFO', message='It does not find real points')
-            else:
-                self._displayGraph(result['radius'], result['meanPoint'], result['points'], self._initialPositions)
-            self._initialPositions.clear()
-        else:           
-            '''initPos = self._macEntry.get().split(',')
-            initPos = [int(i) for i in initPos] 
-            self._initialPositions.append(tuple(initPos))
-            distance = self._device.calcDistanceAccurate(macAddr, 20)
-            if distance:
-                self._distances[task] = distance
-            else:
-                tk.messagebox.showerror(title='Error', message='MAC address is not correct')'''                                  
+        try:
+            task = self._updateLabel(self._locMacLabel, 'LOCALIZE FROM MAC ADDRESS')
+            if task is None:
+                
+            elif task == 4:
+                result = localize(self._initialPositions[0][0], self._initialPositions[0][1], self._initialPositions[0][2], self._distances[1],
+                                            self._initialPositions[1][0], self._initialPositions[1][1], self._initialPositions[1][2], self._distances[2],
+                                            self._initialPositions[2][0], self._initialPositions[2][1], self._initialPositions[2][2], self._distances[3]
+                                            )
+                if result is None:
+                    tk.messagebox.showinfo(title='INFO', message='It does not find real points')
+                else:
+                    self._displayGraph(result['radius'], result['meanPoint'], result['points'], self._initialPositions)
+                self._initialPositions.clear()
+            else:           
+                initPos = [float(i) for i in self._macEntry.get().strip().split(',')] 
+                self._initialPositions.append(tuple(initPos))
+                distance = self._device.calcDistanceAccurate(self._macAddr, 20)
+                if distance is not None:
+                    self._distances[task] = distance
+                    print(self._distances)
+                else:
+                    tk.messagebox.showerror(title='Error', message='MAC address is not correct')      
+        except ConnError as conn:
+            self._resetMac()
+            tk.messagebox.showerror(title='ERROR', message=conn)
+    
+    def _resetMac(self):
+        self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
+        self._initialPositions.clear()                                  
        
     def _updateLabel(self, variableLabel, initialValue):
         if variableLabel.get() == initialValue:
@@ -132,20 +139,19 @@ class LocalizePage(tk.Frame):
     def _displayGraph(self, radius, centerPoint, points, initialPoints):
         self._subplot.clear()       
         
-        scatter1 = self._subplot.scatter(points[0], points[1], points[2], color='red', marker='^')
+        scatter1 = self._subplot.scatter(points[0], points[1], points[2], color='red', marker='o')
         for initial in initialPoints:
-            xInit = initial[0]
-            yInit = initial[1]
-            zInit = initial[2]
-            scatter2 = self._subplot.scatter(xInit, yInit, zInit, color='blue', marker='o')
+            scatter2 = self._subplot.scatter(initial[0], initial[1], initial[2], color='blue', marker='o')
+            self._subplot.plot([initial[0], centerPoint[0]], [initial[1], centerPoint[1]], [initial[2], centerPoint[2]], color='black')
+            self._subplot.text(numpy.mean([initial[0],centerPoint[0]]), numpy.mean([initial[1],centerPoint[1]]), numpy.mean([initial[2],centerPoint[2]]), str(truncate(distanceBetweenTwoPoints(initial, centerPoint), 3)))
 
         scatter3 = self._subplot.scatter(centerPoint[0], centerPoint[1], centerPoint[2], color='green', marker='o')
         u = numpy.linspace(0, 2 * numpy.pi, 100)
         v = numpy.linspace(0, numpy.pi, 100)
-        x = radius * (numpy.outer(numpy.cos(u), numpy.sin(v)) + centerPoint[0])
-        y = radius * (numpy.outer(numpy.sin(u), numpy.sin(v)) + centerPoint[1])
-        z = radius * (numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v)) + centerPoint[2])
-        surface1 = self._subplot.plot_surface(x, y, z, rstride=1, cstride=1, color='lightblue', shade=0, alpha=0.5)
+        x = (radius * numpy.outer(numpy.cos(u), numpy.sin(v))) + centerPoint[0]
+        y = (radius * numpy.outer(numpy.sin(u), numpy.sin(v))) + centerPoint[1]
+        z = (radius * numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v))) + centerPoint[2]
+        self._subplot.plot_surface(x, y, z, rstride=1, cstride=1, color='lightblue', shade=0, alpha=0.5)
 
         self._subplot.set_xlabel('x axis')
         self._subplot.set_ylabel('y axis')
@@ -157,6 +163,6 @@ class LocalizePage(tk.Frame):
         self._subplot.yaxis._axinfo['juggled'] = (1,1,1)
         self._subplot.zaxis._axinfo['juggled'] = (2,2,2)
 
-        self._subplot.legend([scatter1, scatter2, scatter3], ['Probable points', 'Initial points', 'Center of area'])
+        self._subplot.legend([scatter1, scatter2, scatter3], ['Probable points', 'Initial points', 'Center of area: '+str(centerPoint[0])+','+str(centerPoint[1])+','+str(centerPoint[2])])
 
         self._canvas.get_tk_widget().grid(row=0, column=0, sticky='N'+'S'+'W'+'E')     

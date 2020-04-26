@@ -1,6 +1,6 @@
 from req import Req
-from exception import HTTPError
-from mathOperation import quadraticMean, arithmeticMean, truncate
+from exception import HTTPError, ConnError
+from mathOperation import arithmeticMean, truncate
 
 class Device(Req):
     def __init__(self):
@@ -11,7 +11,8 @@ class Device(Req):
                                     'kismet.device.base.manuf',
                                     'kismet.device.base.channel',
                                     'kismet.device.base.frequency',
-                                    'kismet.device.base.signal/kismet.common.signal.last_signal', 
+                                    'kismet.device.base.signal/kismet.common.signal.last_signal',
+                                    'kismet.device.base.signal/kismet.common.signal.max_signal',
                                     'kismet.device.base.type',
                                     'kismet.device.base.last_time'
                                     ]}
@@ -74,9 +75,15 @@ class Device(Req):
             for s in range (sample):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            meanPower = quadraticMean(sampleRSSI)
+            sampleRSSI.append(device[0]['kismet.common.signal.max_signal'])
+            print(sampleRSSI)
+            meanPower = arithmeticMean(sampleRSSI)
+            print(meanPower)
             return self.calcDistanceIstant(meanPower)
         except HTTPError as http:
             print(http)
+            return
+        except ConnError as conn:
+            print(conn)
             return
     
