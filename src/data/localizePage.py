@@ -19,7 +19,6 @@ class LocalizePage(tk.Frame):
         self._filterFields = ['kismet.device.base.macaddr', 'kismet.common.signal.last_signal']
         self._device = Device() 
         self._distances = {} 
-        self._initialPositions = []
         self._macAddr = '' #D8:CE:3A:F4:C5:19
         self._check = True
         self._graph()     
@@ -27,9 +26,7 @@ class LocalizePage(tk.Frame):
         self._entryArea()
         self._label()
         self._resizable()
-    
-    def setIPAddr(self, value):
-        self._device.setIP(value)
+        self._getInitialPositions()
 
     def _graph(self):
         self._figure = Figure(figsize=(5,5), dpi=150)
@@ -50,37 +47,48 @@ class LocalizePage(tk.Frame):
 
         ttk.Style().configure('TButton', background='#808080')
 
-        self._saveIPButton = ttk.Button(self._buttonPane, text='SAVE IP', takefocus=False, command=lambda: self._saveIP())
+        self._save = tk.StringVar()
+        self._save.set('SAVE IP')
+        self._saveIPButton = ttk.Button(self._buttonPane, textvariable=self._save, takefocus=False, command=lambda: self._saveIP())
         self._saveIPButton.grid(row=0, column=0, padx=10, pady=10, sticky='E')
         self._locMacLabel = tk.StringVar()
-        self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
+        self._locMacLabel.set('GET FIRST POSITION')
         self._locMacButton = ttk.Button(self._buttonPane, textvariable=self._locMacLabel, takefocus=False, command=lambda: self._getPosByMAC())
-        self._locMacButton.grid(row=0, column=2, padx=10, pady=10, sticky='E')
+        self._locMacButton.grid(row=0, column=2, padx=10, pady=10)
         self._returnToDevicePageButton = ttk.Button(self._buttonPane, text='GO TO DEVICE PAGE', takefocus=False, command=lambda: self._returnToDevicePage())
-        self._returnToDevicePageButton.grid(row=0, column=4, padx=10, pady=10)
+        self._returnToDevicePageButton.grid(row=0, column=3, padx=10, pady=10)
 
     def _entryArea(self):
-        self._mac = tk.StringVar()
-        self._macEntry = ttk.Entry(self._buttonPane, textvariable=self._mac)
-        self._macEntry.grid(row=0, column=3, pady=10, sticky='W')
-        self._ip = tk.StringVar()
-        self._ipEntry = ttk.Entry(self._buttonPane, textvariable=self._ip)
-        self._ipEntry.grid(row=0, column=1, pady=10, sticky='W')
+        self._ipMac = tk.StringVar()
+        self._ipMacEntry = ttk.Entry(self._buttonPane, textvariable=self._ipMac)
+        self._ipMacEntry.grid(row=0, column=1, pady=10, sticky='W')
 
     def _label(self):
         self._product = ttk.Label(self._buttonPane, text=u'\u00A9 Product by Vinci Nicolò', font=('Comic Sans MS', 8))
-        self._product.grid(row=0, column=5, pady=10, sticky='SE')
+        self._product.grid(row=0, column=4, pady=10, sticky='SE')
         
     def _resizable(self):
         self.rowconfigure(0, weight=50)
         self.rowconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
-        for x in range(6):
+        for x in range(5):
             self._buttonPane.columnconfigure(x, weight=1)
+    
+    def _getInitialPositions(self):
+        self._initialPositions = []
+        self._initPointsFile = open('initialPoints.txt', 'r')
+            for line in self._initPointsFile.readlines():
+                point = tuple(map(int, line.strip('\r\n').split(',')))
+                self._initialPositions.append(point)
 
     def _saveIP(self):
-        self._device.setIP(self._ipEntry.get())
+        if self._saveLabel.get() == 'SAVE IP':
+            self._device.setIP(self._ipMacEntry.get())
+            self._saveLabel.set('SAVE MAC')
+        elif self._saveLabel.get() == 'SAVE MAC':
+            self._macAddr = self._ipMacEntry.get()
+            self._saveLabel.set('SAVE IP')
 
     def _returnToDevicePage(self):
         self._resetMac()
@@ -94,11 +102,15 @@ class LocalizePage(tk.Frame):
 
     def _getPosByMAC(self):
         try:
-            self._check = False
-            task = self._updateLabel(self._locMacLabel, 'LOCALIZE FROM MAC ADDRESS')
-            if task is None:
-                self._macAddr = self._macEntry.get()
-            elif task == 4:
+            self._check = False            
+            if self._updateLabel():
+                distance = self._device.calcDistanceAccurate(self._macAddr, 20)
+                if distance is not None:
+                    self._distances[task] = distance
+                    print(self._distances)
+                else:
+                    tk.messagebox.showerror(title='Error', message='MAC address is not correct')
+            else:
                 result = localize(self._initialPositions[0][0], self._initialPositions[0][1], self._initialPositions[0][2], self._distances[1],
                                             self._initialPositions[1][0], self._initialPositions[1][1], self._initialPositions[1][2], self._distances[2],
                                             self._initialPositions[2][0], self._initialPositions[2][1], self._initialPositions[2][2], self._distances[3]
@@ -107,16 +119,7 @@ class LocalizePage(tk.Frame):
                     tk.messagebox.showinfo(title='INFO', message='It does not find real points')
                 else:
                     self._displayGraph(result['radius'], result['meanPoint'], result['points'], self._initialPositions)
-                self._initialPositions.clear()
-            else:           
-                initPos = [float(i) for i in self._macEntry.get().strip().split(',')] 
-                self._initialPositions.append(tuple(initPos))
-                distance = self._device.calcDistanceAccurate(self._macAddr, 20)
-                if distance is not None:
-                    self._distances[task] = distance
-                    print(self._distances)
-                else:
-                    tk.messagebox.showerror(title='Error', message='MAC address is not correct')      
+                self._initialPositions.clear()      
         except ConnError as conn:
             self._resetMac()
             tk.messagebox.showerror(title='ERROR', message=conn)
@@ -127,22 +130,19 @@ class LocalizePage(tk.Frame):
         self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
         self._initialPositions.clear()                                  
        
-    def _updateLabel(self, variableLabel, initialValue):
-        if variableLabel.get() == initialValue:
-            variableLabel.set('GET FIRST POSITION')
-            return 
-        elif variableLabel.get() == 'GET FIRST POSITION':
-            variableLabel.set('GET SECOND POSITION')
-            return 1
-        elif variableLabel.get() == 'GET SECOND POSITION':
-            variableLabel.set('GET THIRD POSITION')
-            return 2
-        elif variableLabel.get() == 'GET THIRD POSITION':
-            variableLabel.set('CALCULATE POSITION')
-            return 3
-        elif variableLabel.get() == 'CALCULATE POSITION':
-            variableLabel.set(initialValue)
-            return 4
+    def _updateLabel(self):
+        if self._locMacLabel.get() == 'GET FIRST POSITION':
+            self._locMacLabel.set('GET SECOND POSITION')
+            return True
+        elif self._locMacLabel.get() == 'GET SECOND POSITION':
+            self._locMacLabel.set('GET THIRD POSITION')
+            return True
+        elif self._locMacLabel.get() == 'GET THIRD POSITION':
+            self._locMacLabel.set('CALCULATE POSITION')
+            return False
+        elif self._locMacLabel.get() == 'CALCULATE POSITION':
+            self._locMacLabel.set('GET FIRST POSITION')
+            return True
 
     def _displayGraph(self, radius, centerPoint, points, initialPoints):
         self._subplot.clear()       

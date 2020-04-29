@@ -16,6 +16,4 @@ class MainInterface(tk.Tk):
     def showFrame(self, pageName):
         frame = self.frames[pageName]
         frame.tkraise()
-
-    def setIPToLocalizePage(self, value):
-        self.frames['LocalizePage'].setIPAddr(value)
+        

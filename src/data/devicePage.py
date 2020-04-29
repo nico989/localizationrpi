@@ -89,7 +89,6 @@ class DevicePage(tk.Frame):
         try:
             if len(threading.enumerate()) == 1:
                 self._cleanAll()
-                self._controller.setIPToLocalizePage(self._ipEntry.get())
                 self._device.setIP(self._ipEntry.get())
                 #devices = self._device.getClientsLastTimeSec(5*60)
                 devices = self._device.getClients()
@@ -107,7 +106,8 @@ class DevicePage(tk.Frame):
 
     def _fillTable(self, index, device):
         self._semaphore.acquire()
-        distance = self._device.calcDistanceAccurate(device[self._filterFields[1]], 20)
+        distance = self._device.calcDistanceAccurate(device[self._filterFields[1]], 10)
+        #distance = self._device.calcDistanceFromMaxMinPower(device[self._filterFields[1]])
         if distance is not None:
             self._tv.insert('', 'end', iid=index, values=(device[self._filterFields[0]], device[self._filterFields[1]], device[self._filterFields[2]], 
                                                         convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
