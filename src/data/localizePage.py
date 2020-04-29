@@ -47,9 +47,9 @@ class LocalizePage(tk.Frame):
 
         ttk.Style().configure('TButton', background='#808080')
 
-        self._save = tk.StringVar()
-        self._save.set('SAVE IP')
-        self._saveIPButton = ttk.Button(self._buttonPane, textvariable=self._save, takefocus=False, command=lambda: self._saveIP())
+        self._saveLabel = tk.StringVar()
+        self._saveLabel.set('SAVE IP')
+        self._saveIPButton = ttk.Button(self._buttonPane, textvariable=self._saveLabel, takefocus=False, command=lambda: self._saveIPMAc())
         self._saveIPButton.grid(row=0, column=0, padx=10, pady=10, sticky='E')
         self._locMacLabel = tk.StringVar()
         self._locMacLabel.set('GET FIRST POSITION')
@@ -82,7 +82,7 @@ class LocalizePage(tk.Frame):
             point = tuple(map(int, line.strip('\r\n').split(',')))
             self._initialPositions.append(point)
 
-    def _saveIP(self):
+    def _saveIPMAc(self):
         if self._saveLabel.get() == 'SAVE IP':
             self._device.setIP(self._ipMacEntry.get())
             self._saveLabel.set('SAVE MAC')
@@ -91,7 +91,8 @@ class LocalizePage(tk.Frame):
             self._saveLabel.set('SAVE IP')
 
     def _returnToDevicePage(self):
-        self._resetMac()
+        self._saveLabel.set('SAVE IP')
+        self._locMacLabel.set('GET FIRST POSITION')
         self._controller.showFrame('DevicePage')
 
     def _posThread(self):
@@ -121,14 +122,10 @@ class LocalizePage(tk.Frame):
                     self._displayGraph(result['radius'], result['meanPoint'], result['points'], self._initialPositions)
                 self._initialPositions.clear()      
         except ConnError as conn:
-            self._resetMac()
+            self._locMacLabel.set('GET FIRST POSITION')
             tk.messagebox.showerror(title='ERROR', message=conn)
         finally:
-            self._check = True
-    
-    def _resetMac(self):
-        self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
-        self._initialPositions.clear()                                  
+            self._check = True                                  
        
     def _updateLabel(self):
         if self._locMacLabel.get() == 'GET FIRST POSITION':
