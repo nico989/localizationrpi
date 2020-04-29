@@ -53,7 +53,7 @@ class LocalizePage(tk.Frame):
         self._saveIPButton.grid(row=0, column=0, padx=10, pady=10, sticky='E')
         self._locMacLabel = tk.StringVar()
         self._locMacLabel.set('GET FIRST POSITION')
-        self._locMacButton = ttk.Button(self._buttonPane, textvariable=self._locMacLabel, takefocus=False, command=lambda: self._getPosByMAC())
+        self._locMacButton = ttk.Button(self._buttonPane, textvariable=self._locMacLabel, takefocus=False, command=lambda: self._posThread())
         self._locMacButton.grid(row=0, column=2, padx=10, pady=10)
         self._returnToDevicePageButton = ttk.Button(self._buttonPane, text='GO TO DEVICE PAGE', takefocus=False, command=lambda: self._returnToDevicePage())
         self._returnToDevicePageButton.grid(row=0, column=3, padx=10, pady=10)
@@ -77,10 +77,10 @@ class LocalizePage(tk.Frame):
     
     def _getInitialPositions(self):
         self._initialPositions = []
-        self._initPointsFile = open('initialPoints.txt', 'r')
-            for line in self._initPointsFile.readlines():
-                point = tuple(map(int, line.strip('\r\n').split(',')))
-                self._initialPositions.append(point)
+        self._initPointsFile = open('src/data/initialPoints.txt', 'r')
+        for line in self._initPointsFile.readlines():
+            point = tuple(map(int, line.strip('\r\n').split(',')))
+            self._initialPositions.append(point)
 
     def _saveIP(self):
         if self._saveLabel.get() == 'SAVE IP':
@@ -139,10 +139,10 @@ class LocalizePage(tk.Frame):
             return True
         elif self._locMacLabel.get() == 'GET THIRD POSITION':
             self._locMacLabel.set('CALCULATE POSITION')
-            return False
+            return True
         elif self._locMacLabel.get() == 'CALCULATE POSITION':
             self._locMacLabel.set('GET FIRST POSITION')
-            return True
+            return False
 
     def _displayGraph(self, radius, centerPoint, points, initialPoints):
         self._subplot.clear()       
