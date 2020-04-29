@@ -1,7 +1,7 @@
 from device import Device
 import tkinter as tk  
 import tkinter.ttk as ttk
-import matplotlib, numpy
+import matplotlib, numpy, threading
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
@@ -21,6 +21,7 @@ class LocalizePage(tk.Frame):
         self._distances = {} 
         self._initialPositions = []
         self._macAddr = '' #D8:CE:3A:F4:C5:19
+        self._check = True
         self._graph()     
         self._button()
         self._entryArea()
@@ -82,16 +83,21 @@ class LocalizePage(tk.Frame):
         self._device.setIP(self._ipEntry.get())
 
     def _returnToDevicePage(self):
-        self._initialPositions.clear()
-        self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')
-        self._locMacLabel.set('LOCALIZE ALL POSSIBLE ADDRESS')
+        self._resetMac()
         self._controller.showFrame('DevicePage')
+
+    def _posThread(self):
+        if self._check:
+            threading.Thread(target= self._getPosByMAC, daemon=True).start()
+        else:
+            tk.messagebox.showerror(title='ERROR', message='Another thread is running')
 
     def _getPosByMAC(self):
         try:
+            self._check = False
             task = self._updateLabel(self._locMacLabel, 'LOCALIZE FROM MAC ADDRESS')
             if task is None:
-                
+                self._macAddr = self._macEntry.get()
             elif task == 4:
                 result = localize(self._initialPositions[0][0], self._initialPositions[0][1], self._initialPositions[0][2], self._distances[1],
                                             self._initialPositions[1][0], self._initialPositions[1][1], self._initialPositions[1][2], self._distances[2],
@@ -114,6 +120,8 @@ class LocalizePage(tk.Frame):
         except ConnError as conn:
             self._resetMac()
             tk.messagebox.showerror(title='ERROR', message=conn)
+        finally:
+            self._check = True
     
     def _resetMac(self):
         self._locMacLabel.set('LOCALIZE FROM MAC ADDRESS')

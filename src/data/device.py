@@ -12,10 +12,12 @@ class Device(Req):
                                     'kismet.device.base.channel',
                                     'kismet.device.base.frequency',
                                     'kismet.device.base.signal/kismet.common.signal.last_signal',
-                                    'kismet.device.base.signal/kismet.common.signal.max_signal',
                                     'kismet.device.base.type',
-                                    'kismet.device.base.last_time'
-                                    ]}
+                                    'kismet.device.base.last_time',
+                                    'kismet.device.base.signal/kismet.common.signal.max_signal',
+                                    'kismet.device.base.signal/kismet.common.signal.min_signal'
+                                    ]
+                        }
         self._K = 15.08085
         self._A = -43.7257
 
@@ -75,8 +77,21 @@ class Device(Req):
             for s in range (sample):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
+            #sampleRSSI.append(device[0]['kismet.common.signal.max_signal'])
+            print(sampleRSSI)
             meanPower = arithmeticMean(sampleRSSI)
             return self.calcDistanceIstant(meanPower)
+        except HTTPError as http:
+            return
+        except ConnError as conn:
+            return
+    
+    def calcDistanceFromMaxMinPower(self, macAddr):
+        try:
+            device = self.getDeviceByMAC(macAddr)
+            diff = (device[0]['kismet.common.signal.max_signal'] + device[0]['kismet.common.signal.min_signal'])/2
+            print(diff)
+            return self.calcDistanceIstant(diff)
         except HTTPError as http:
             return
         except ConnError as conn:
