@@ -31,16 +31,12 @@ class Regression:
         betaA = self._mediaAritmetica(self._RSSIAritmetica) - alphaA*self._mediaAritmetica(self._distanceLog)
         alphaQ = numpy.cov(self._distanceLog, self._RSSIQuadratica)[0][1] /numpy.var(self._distanceLog, ddof=1)
         betaQ = self._mediaAritmetica(self._RSSIQuadratica) - alphaQ*self._mediaAritmetica(self._distanceLog)
-        result = [
-            {
+        result = {
                 'arithmeticK' : alphaA,
-                'arithmeticA' : betaA
-            },
-            {
+                'arithmeticA' : betaA,
                 'quadraticK' : alphaQ,
                 'quadraticA' : betaQ
             }
-        ]
         return result
 
     def _mediaAritmetica(self, val):

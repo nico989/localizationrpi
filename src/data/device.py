@@ -18,8 +18,8 @@ class Device(Req):
                                     'kismet.device.base.signal/kismet.common.signal.min_signal'
                                     ]
                         }
-        self._K = 15.08085
-        self._A = -43.7257
+        self._K = 18.4054 #14.1641
+        self._A = -46.6820 #-52.3064
 
     def setIndoor(self):
         self._K = 15.08085
