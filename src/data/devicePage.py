@@ -106,8 +106,7 @@ class DevicePage(tk.Frame):
 
     def _fillTable(self, index, device):
         self._semaphore.acquire()
-        distance = self._device.calcDistanceAccurate(device[self._filterFields[1]], 10)
-        #distance = self._device.calcDistanceFromMaxMinPower(device[self._filterFields[1]])
+        distance = self._device.calcDistanceAccurateSample(device[self._filterFields[1]], 10)
         if distance is not None:
             self._tv.insert('', 'end', iid=index, values=(device[self._filterFields[0]], device[self._filterFields[1]], device[self._filterFields[2]], 
                                                         convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 

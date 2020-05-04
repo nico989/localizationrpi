@@ -1,6 +1,7 @@
 from req import Req
 from exception import HTTPError, ConnError
 from mathOperation import arithmeticMean, truncate
+import time
 
 class Device(Req):
     def __init__(self):
@@ -18,8 +19,8 @@ class Device(Req):
                                     'kismet.device.base.signal/kismet.common.signal.min_signal'
                                     ]
                         }
-        self._K = 18.4054 #14.1641
-        self._A = -46.6820 #-52.3064
+        self._K = 14.1641 #18.4054 
+        self._A = -52.3064 #-46.6820 
 
     def setIndoor(self):
         self._K = 15.08085
@@ -71,13 +72,12 @@ class Device(Req):
         distance = pow(10, (self._A-power)/self._K)
         return truncate(distance, 3)
 
-    def calcDistanceAccurate(self, macAddr, sample):
+    def calcDistanceAccurateSample(self, macAddr, sample):
         try:
             sampleRSSI = []
             for s in range (sample):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            #sampleRSSI.append(device[0]['kismet.common.signal.max_signal'])
             print(sampleRSSI)
             meanPower = arithmeticMean(sampleRSSI)
             return self.calcDistanceIstant(meanPower)
@@ -86,12 +86,18 @@ class Device(Req):
         except ConnError as conn:
             return
     
-    def calcDistanceFromMaxMinPower(self, macAddr):
+    def calcDistanceAccurateSec(self, macAddr, seconds):
         try:
-            device = self.getDeviceByMAC(macAddr)
-            diff = (device[0]['kismet.common.signal.max_signal'] + device[0]['kismet.common.signal.min_signal'])/2
-            print(diff)
-            return self.calcDistanceIstant(diff)
+            initTime = time.time()
+            sampleRSSI = []
+            while (time.time() - initTime) < seconds:
+                device = self.getDeviceByMAC(macAddr)
+                sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
+            print(sampleRSSI)
+            print(len(sampleRSSI))
+            meanPower = arithmeticMean(sampleRSSI)
+            print(meanPower)
+            return self.calcDistanceIstant(meanPower)
         except HTTPError as http:
             return
         except ConnError as conn:
