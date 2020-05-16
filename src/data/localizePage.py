@@ -1,13 +1,16 @@
 from device import Device
+from coordinates import Coordinates, XYZ
+from exception import ConnError
+from mathOperation import localize, distanceBetweenTwoPoints, truncate
 import tkinter as tk  
 import tkinter.ttk as ttk
-import matplotlib, numpy, threading
+import threading
+import numpy
+import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
-from mathOperation import localize, distanceBetweenTwoPoints, truncate
-from exception import ConnError
 
 class LocalizePage(tk.Frame):
     def __init__(self, controller):
@@ -19,6 +22,8 @@ class LocalizePage(tk.Frame):
         self._filterFields = ['kismet.device.base.macaddr', 'kismet.common.signal.last_signal']
         self._device = Device() 
         self._distances = {} 
+        self._initialPositions = []
+        self._coordinates = Coordinates()
         self._macAddr = '' #D8:CE:3A:F4:C5:19
         self._check = True
         self._graph()     
@@ -26,7 +31,6 @@ class LocalizePage(tk.Frame):
         self._entryArea()
         self._label()
         self._resizable()
-        self._getInitialPositions()
 
     def _graph(self):
         self._figure = Figure(figsize=(5,5), dpi=150)
@@ -74,17 +78,17 @@ class LocalizePage(tk.Frame):
         self.columnconfigure(0, weight=1)
         for x in range(5):
             self._buttonPane.columnconfigure(x, weight=1)
-    
+    '''
     def _getInitialPositions(self):
-        self._initialPositions = []
         self._initPointsFile = open('src/data/initialPoints.txt', 'r')
         for line in self._initPointsFile.readlines():
-            point = tuple(map(int, line.strip('\r\n').split(',')))
+            point = tuple(map(float, line.strip('\r\n').split(',')))
             self._initialPositions.append(point)
-
+    '''
     def _saveIPMAc(self):
         if self._saveLabel.get() == 'SAVE IP':
             self._device.setIP(self._ipMacEntry.get())
+            self._coordinates.setIP(self._ipMacEntry.get())
             self._saveLabel.set('SAVE MAC')
         elif self._saveLabel.get() == 'SAVE MAC':
             self._macAddr = self._ipMacEntry.get()
@@ -105,13 +109,15 @@ class LocalizePage(tk.Frame):
         try:
             self._check = False            
             if self._updateLabel():
-                distance = self._device.calcDistanceAccurate(self._macAddr, 20)
+                self._coordinates.getLLH()
+                distance = self._device.calcDistanceAccurateSample(self._macAddr, 20)
                 if distance is not None:
                     self._distances[task] = distance
                     print(self._distances)
                 else:
                     tk.messagebox.showerror(title='Error', message='MAC address is not correct')
             else:
+                self._initialPositions = self._coordinates.positions()         
                 result = localize(self._initialPositions[0][0], self._initialPositions[0][1], self._initialPositions[0][2], self._distances[1],
                                             self._initialPositions[1][0], self._initialPositions[1][1], self._initialPositions[1][2], self._distances[2],
                                             self._initialPositions[2][0], self._initialPositions[2][1], self._initialPositions[2][2], self._distances[3]
@@ -119,8 +125,8 @@ class LocalizePage(tk.Frame):
                 if result is None:
                     tk.messagebox.showinfo(title='INFO', message='It does not find real points')
                 else:
-                    self._displayGraph(result['radius'], result['meanPoint'], result['points'], self._initialPositions)
-                self._initialPositions.clear()      
+                    self._displayGraph(result['radius'], result['meanPoint'], result['points'])
+                self._initialPositions.clear()
         except ConnError as conn:
             self._locMacLabel.set('GET FIRST POSITION')
             tk.messagebox.showerror(title='ERROR', message=conn)
@@ -141,14 +147,16 @@ class LocalizePage(tk.Frame):
             self._locMacLabel.set('GET FIRST POSITION')
             return False
 
-    def _displayGraph(self, radius, centerPoint, points, initialPoints):
-        self._subplot.clear()       
-        
+    def _displayGraph(self, radius, centerPoint, points):
+        self._subplot.clear() 
+
+        allY = points[1]
         scatter1 = self._subplot.scatter(points[0], points[1], points[2], color='red', marker='o')
-        for initial in initialPoints:
-            scatter2 = self._subplot.scatter(initial[0], initial[1], initial[2], color='blue', marker='o')
-            self._subplot.plot([initial[0], centerPoint[0]], [initial[1], centerPoint[1]], [initial[2], centerPoint[2]], color='black')
-            self._subplot.text(numpy.mean([initial[0],centerPoint[0]]), numpy.mean([initial[1],centerPoint[1]]), numpy.mean([initial[2],centerPoint[2]]), str(truncate(distanceBetweenTwoPoints(initial, centerPoint), 3)))
+        for initial in self._initialPositions:
+            allY.append(initial.y)
+            scatter2 = self._subplot.scatter(initial.x, initial.y, initial.z, color='blue', marker='o')
+            self._subplot.plot([initial.x, centerPoint[0]], [initial.y, centerPoint[1]], [initial.z, centerPoint[2]], color='black')
+            self._subplot.text(numpy.mean([initial.x,centerPoint[0]]), numpy.mean([initial.y,centerPoint[1]]), numpy.mean([initial.z,centerPoint[2]]), str(truncate(distanceBetweenTwoPoints((initial.x, initial.y, initial.z), centerPoint), 3)))
 
         scatter3 = self._subplot.scatter(centerPoint[0], centerPoint[1], centerPoint[2], color='green', marker='o')
         u = numpy.linspace(0, 2 * numpy.pi, 100)
@@ -161,9 +169,7 @@ class LocalizePage(tk.Frame):
         self._subplot.set_xlabel('x axis')
         self._subplot.set_ylabel('y axis')
         self._subplot.set_zlabel('z axis')
-        self._subplot.set_xlim(min(points[0]) - 1, max(points[0]) + 1)
-        self._subplot.set_ylim(max(points[1]) + 1, min(points[1]) - 1)
-        self._subplot.set_zlim(min(points[2]) - 1, max(points[2]) + 1)
+        self._subplot.set_ylim(max(allY) + 1, min(allY) - 1) #adjust Y
         self._subplot.xaxis._axinfo['juggled'] = (0,0,0)
         self._subplot.yaxis._axinfo['juggled'] = (1,1,1)
         self._subplot.zaxis._axinfo['juggled'] = (2,2,2)

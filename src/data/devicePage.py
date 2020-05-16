@@ -98,7 +98,6 @@ class DevicePage(tk.Frame):
                 tk.messagebox.showinfo(title='INFO', message='Found: ' + str(len(devices)) + ' devices')
             else:
                 tk.messagebox.showerror(title='ERROR', message='Another scan is running') 
-            
         except HTTPError as http:
             tk.messagebox.showerror(title='ERROR', message=http)
         except ConnError as conn:
@@ -106,7 +105,7 @@ class DevicePage(tk.Frame):
 
     def _fillTable(self, index, device):
         self._semaphore.acquire()
-        distance = self._device.calcDistanceAccurateSample(device[self._filterFields[1]], 10)
+        distance = self._device.calcDistanceAccurateSample(device[self._filterFields[1]], 20)
         if distance is not None:
             self._tv.insert('', 'end', iid=index, values=(device[self._filterFields[0]], device[self._filterFields[1]], device[self._filterFields[2]], 
                                                         convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
