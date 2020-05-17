@@ -1,5 +1,6 @@
 from device import Device
-from coordinates import Coordinates, XYZ
+from coordinates import Coordinates
+from formatPoint import XYZ
 from exception import ConnError
 from mathOperation import localize, distanceBetweenTwoPoints, truncate
 import tkinter as tk  
@@ -21,7 +22,7 @@ class LocalizePage(tk.Frame):
         self.grid(sticky='N'+'S'+'W'+'E')
         self._filterFields = ['kismet.device.base.macaddr', 'kismet.common.signal.last_signal']
         self._device = Device() 
-        self._distances = {} 
+        self._distances = [] 
         self._initialPositions = []
         self._coordinates = Coordinates()
         self._macAddr = '' #D8:CE:3A:F4:C5:19
@@ -112,21 +113,18 @@ class LocalizePage(tk.Frame):
                 self._coordinates.getLLH()
                 distance = self._device.calcDistanceAccurateSample(self._macAddr, 20)
                 if distance is not None:
-                    self._distances[task] = distance
+                    self._distances.append(distance)
                     print(self._distances)
                 else:
                     tk.messagebox.showerror(title='Error', message='MAC address is not correct')
             else:
-                self._initialPositions = self._coordinates.positions()         
-                result = localize(self._initialPositions[0][0], self._initialPositions[0][1], self._initialPositions[0][2], self._distances[1],
-                                            self._initialPositions[1][0], self._initialPositions[1][1], self._initialPositions[1][2], self._distances[2],
-                                            self._initialPositions[2][0], self._initialPositions[2][1], self._initialPositions[2][2], self._distances[3]
-                                            )
-                if result is None:
-                    tk.messagebox.showinfo(title='INFO', message='It does not find real points')
-                else:
-                    self._displayGraph(result['radius'], result['meanPoint'], result['points'])
-                self._initialPositions.clear()
+                self._initialPositions = self._coordinates.positions()      
+            result = localize(self._initialPositions[0], self._distances[0], self._initialPositions[1], self._distances[1], self._initialPositions[2], self._distances[2])
+            if result is None:
+                tk.messagebox.showinfo(title='INFO', message='It does not find real points')
+            else:
+                self._displayGraph(result['radius'], result['meanPoint'], result['points'])
+            self._initialPositions.clear()
         except ConnError as conn:
             self._locMacLabel.set('GET FIRST POSITION')
             tk.messagebox.showerror(title='ERROR', message=conn)
@@ -150,20 +148,23 @@ class LocalizePage(tk.Frame):
     def _displayGraph(self, radius, centerPoint, points):
         self._subplot.clear() 
 
-        allY = points[1]
-        scatter1 = self._subplot.scatter(points[0], points[1], points[2], color='red', marker='o')
+        allY = []
+        for point in points:
+            allY.append(point.y)
+            scatter1 = self._subplot.scatter(point.x, point.y, point.z, color='red', marker='o')
+        
         for initial in self._initialPositions:
             allY.append(initial.y)
             scatter2 = self._subplot.scatter(initial.x, initial.y, initial.z, color='blue', marker='o')
-            self._subplot.plot([initial.x, centerPoint[0]], [initial.y, centerPoint[1]], [initial.z, centerPoint[2]], color='black')
-            self._subplot.text(numpy.mean([initial.x,centerPoint[0]]), numpy.mean([initial.y,centerPoint[1]]), numpy.mean([initial.z,centerPoint[2]]), str(truncate(distanceBetweenTwoPoints((initial.x, initial.y, initial.z), centerPoint), 3)))
+            self._subplot.plot([initial.x, centerPoint.x], [initial.y, centerPoint.y], [initial.z, centerPoint.z], color='black')
+            self._subplot.text(numpy.mean([initial.x, centerPoint.x]), numpy.mean([initial.y, centerPoint.y]), numpy.mean([initial.z, centerPoint.z]), str(truncate(distanceBetweenTwoPoints(initial, centerPoint), 3)))
 
-        scatter3 = self._subplot.scatter(centerPoint[0], centerPoint[1], centerPoint[2], color='green', marker='o')
+        scatter3 = self._subplot.scatter(centerPoint.x, centerPoint.y, centerPoint.z, color='green', marker='o')
         u = numpy.linspace(0, 2 * numpy.pi, 100)
         v = numpy.linspace(0, numpy.pi, 100)
-        x = (radius * numpy.outer(numpy.cos(u), numpy.sin(v))) + centerPoint[0]
-        y = (radius * numpy.outer(numpy.sin(u), numpy.sin(v))) + centerPoint[1]
-        z = (radius * numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v))) + centerPoint[2]
+        x = (radius * numpy.outer(numpy.cos(u), numpy.sin(v))) + centerPoint.x
+        y = (radius * numpy.outer(numpy.sin(u), numpy.sin(v))) + centerPoint.y
+        z = (radius * numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v))) + centerPoint.z
         self._subplot.plot_surface(x, y, z, rstride=1, cstride=1, color='lightblue', shade=0, alpha=0.5)
 
         self._subplot.set_xlabel('x axis')
@@ -174,6 +175,6 @@ class LocalizePage(tk.Frame):
         self._subplot.yaxis._axinfo['juggled'] = (1,1,1)
         self._subplot.zaxis._axinfo['juggled'] = (2,2,2)
 
-        self._subplot.legend([scatter1, scatter2, scatter3], ['Probable points', 'Initial points', 'Center of area: '+str(centerPoint[0])+','+str(centerPoint[1])+','+str(centerPoint[2])])
+        self._subplot.legend([scatter1, scatter2, scatter3], ['Probable points', 'Initial points', 'Center of area: ' + str(centerPoint.x) + ',' + str(centerPoint.y) + ',' + str(centerPoint.z)])
 
         self._canvas.get_tk_widget().grid(row=0, column=0, sticky='N'+'S'+'W'+'E')     

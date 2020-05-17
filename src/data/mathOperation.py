@@ -1,10 +1,12 @@
-import math, sympy
+import math
+import sympy
+from formatPoint import XYZ
 
 def degToRad(deg):
     return deg * math.pi / 180.0 
 
 def distanceBetweenTwoPoints(p1, p2):
-    distance = pow((p1[0]-p2[0])**2+(p1[1]-p2[1])**2+(p1[2]+p2[2])**2, 1/2)
+    distance = pow((p2.x-p1.x)**2+(p2.y-p1.y)**2+(p2.z-p1.z)**2, 1/2)
     return distance
 
 def arithmeticMean(values):
@@ -28,37 +30,55 @@ def convertIntoGhz(value):
     frequency = value*10**-6
     return truncate(frequency, 3)
 
-def localize(x1,y1,z1,r1,x2,y2,z2,r2,x3,y3,z3,r3):
+def localize(p1, r1, p2, r2, p3, r3):
     sympy.init_printing()
     x,y,z = sympy.symbols('x,y,z')
-    sphere1 = sympy.Eq((x-x1)**2+(y-y1)**2+(z-z1)**2,r1**2)
-    sphere2 = sympy.Eq((x-x2)**2+(y-y2)**2+(z-z2)**2,r2**2)
-    sphere3 = sympy.Eq((x-x3)**2+(y-y3)**2+(z-z3)**2,r3**2)
+    sphere1 = sympy.Eq((x-p1.x)**2+(y-p1.y)**2+(z-p1.z)**2,r1**2)
+    sphere2 = sympy.Eq((x-p2.x)**2+(y-p2.y)**2+(z-p2.z)**2,r2**2)
+    sphere3 = sympy.Eq((x-p3.x)**2+(y-p3.y)**2+(z-p3.z)**2,r3**2)
     results = sympy.solve([sphere1,sphere2,sphere3],(x,y,z))
-    print('Results:\n' + str(results))
-    coordinates = ([], [], [])
+    print('Result:\n' + str(results))
+
+    coordinates = []
     if len(results) is not 0:
         for result in results:
+            apprValue = []
             for i in range(3):
                 if result[i].is_real:
-                    approximateValue = truncate(result[i].evalf(), 3)
-                    coordinates[i].append(approximateValue)
+                    apprCoord = result[i].evalf()
+                    apprValue.append(truncate(apprCoord,3))
                 else:
                     return
+            coordinates.append(XYZ(apprValue[0], apprValue[1], apprValue[2]))
     else:
         return
-    print('All coordinates:\n' + str(coordinates))
-    meanPoint = (arithmeticMean(coordinates[0]), arithmeticMean(coordinates[1]), arithmeticMean(coordinates[2]))
-    print('Point coordinates: ' + str(meanPoint))
+
+    allX = []
+    allY = []
+    allZ = []
+    for coordinate in coordinates:
+        allX.append(coordinate.x)
+        allY.append(coordinate.y)
+        allZ.append(coordinate.z)
+    meanPoint = XYZ(arithmeticMean(allX), arithmeticMean(allY), arithmeticMean(allZ))
+
     allDistanceFromMeanPoint = []
-    for result in results:
-        allDistanceFromMeanPoint.append(distanceBetweenTwoPoints(meanPoint, result))
-    print(allDistanceFromMeanPoint)
-    radius = truncate(max(allDistanceFromMeanPoint), 3)
-    print('Radius: ' + str(radius))
+    for coordinate in coordinates:
+        allDistanceFromMeanPoint.append(distanceBetweenTwoPoints(meanPoint, coordinate))
+    radius = truncate(max(allDistanceFromMeanPoint),3)
+   
     res = {
         'radius': radius,
         'meanPoint': meanPoint,
         'points': coordinates
     }
     return res
+
+if __name__ == '__main__':
+    p1 = XYZ(0,0,0)
+    p2 = XYZ(1,1,1)
+    p3 = XYZ(1,0,0)
+    d = localize(p1, 1, p2, 1, p3, 1)
+    for i in d['points']:
+        print(i)
+    
