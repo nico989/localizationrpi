@@ -1,5 +1,4 @@
 from device import Device
-from coordinates import Coordinates
 from formatPoint import XYZ
 from exception import ConnError
 from mathOperation import localize, distanceBetweenTwoPoints, truncate
@@ -24,7 +23,6 @@ class LocalizePage(tk.Frame):
         self._device = Device() 
         self._distances = defaultdict(list)
         self._initialPositions = []
-        self._coordinates = Coordinates()
         self._check = True
         self._getInitialPositions()
         self._graph()     
@@ -104,8 +102,7 @@ class LocalizePage(tk.Frame):
         try:
             self._check = False            
             if self._updateLabel():
-                #self._coordinates.getLLH()
-                devices = self._device.getClients()
+                devices = self._device.getClientsLastTimeSec(10)
                 macAddresses = self._device.filterFields(devices, 'kismet.device.base.macaddr')
                 for mac in macAddresses:
                     distance = self._device.calcDistanceAccurateSec(mac, 10)
@@ -113,7 +110,6 @@ class LocalizePage(tk.Frame):
                         self._distances[mac].append(distance)
                 tk.messagebox.showinfo(title='INFO', message='Get position')
             else:
-                #self._initialPositions = self._coordinates.positions()
                 allMeanPoint = []
                 allResult = []
                 for mac in self._distances:
