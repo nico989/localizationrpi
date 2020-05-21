@@ -16,9 +16,8 @@ class Req:
 
     def get(self, path, params):
         url = self._users + self._ipAddr + ':' + str(self._port) + path
-        response = requests.get(url=url, params=params)
         try:
-            response = requests.post(url=url, headers=self._head, data=dat)
+            response = requests.get(url=url, params=params)
             response.raise_for_status()
             return json.loads(response.text)
         except requests.exceptions.HTTPError:

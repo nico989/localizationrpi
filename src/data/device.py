@@ -19,12 +19,12 @@ class Device(Req):
                                     'kismet.device.base.signal/kismet.common.signal.min_signal'
                                     ]
                         }
-        self._K = 14.1641 #18.4054 
-        self._A = -52.3064 #-46.6820 
+        self._K = 18.4054 #14.1641
+        self._A = -46.6820 #-52.3064
 
     def setIndoor(self):
-        self._K = 15.08085
-        self._A = -43.7257
+        self._K = 18.4054
+        self._A = -46.6820
 
     def setOutdoor(self):
         self._K = 0.0
@@ -34,7 +34,7 @@ class Device(Req):
         return self.post(self._paths[0], self._fields)
         
     def getAccessPoint(self):
-            return self.post(self._paths[1], self._fields)   
+        return self.post(self._paths[1], self._fields)   
 
     def getDeviceByMAC(self, macAddr):
         return self.post(self._paths[3] + macAddr + self._paths[4] , self._fields)
@@ -46,7 +46,6 @@ class Device(Req):
             if device[self._fields['fields'][5]]=='Wi-Fi Client':
                 clients.append(device)
         return clients
-
 
     def getClientsLastTimeSec(self, seconds):
         clients = []
@@ -78,7 +77,6 @@ class Device(Req):
             for s in range (sample):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            print(sampleRSSI)
             meanPower = arithmeticMean(sampleRSSI)
             return self.calcDistanceIstant(meanPower)
         except HTTPError as http:
@@ -93,10 +91,7 @@ class Device(Req):
             while (time.time() - initTime) < seconds:
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
-            print(sampleRSSI)
-            print(len(sampleRSSI))
             meanPower = arithmeticMean(sampleRSSI)
-            print(meanPower)
             return self.calcDistanceIstant(meanPower)
         except HTTPError as http:
             return

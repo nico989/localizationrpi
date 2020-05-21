@@ -13,15 +13,11 @@ def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(address)
     server.listen(5)
-
-    gpsd = gps.gps(mode=gps.WATCH_ENABLE)
-    result = {'latitude' : 0.0, 'longitude': 0.0, 'altitude': float('nan')}
-    latitude = 0.0
-    longitude = 0.0 
-    altitude = float('nan')
     try:
         while True:
             # print('Waiting connection...')
+            gpsd = gps.gps(mode=gps.WATCH_ENABLE)
+            result = {'latitude' : 0.0, 'longitude': 0.0, 'altitude': float('nan')}
             client, address = server.accept()
             while result['latitude'] == 0.0 or result['longitude'] == 0.0 or math.isnan(result['altitude']):
                 result['latitude'] = gpsd.fix.latitude

@@ -9,7 +9,7 @@ from formatPoint import *
 class Coordinates:
     def __init__(self):
         self._port = 5000
-        self._ip = '192.168.1.69'
+        self._ip = ''
         self._llh = []
         self._xyz = []
         self._rad = 6378137.0
@@ -17,6 +17,10 @@ class Coordinates:
     
     def setIP(self, value):
         self._ip = value
+    
+    def _clearAll(self):
+        self._llh.clear()
+        self._xyz.clear()
     
     def _geodeticToECEF(self):
         for llh in self._llh:
@@ -40,13 +44,14 @@ class Coordinates:
             z = numpy.cos(degToRad(self._llh[0].lat))*numpy.cos(degToRad(self._llh[0].lon)) * (xyz.x - self._xyz[0].x) + numpy.cos(degToRad(self._llh[0].lat))*numpy.sin(degToRad(self._llh[0].lon)) * (xyz.y - self._xyz[0].y) + numpy.sin(degToRad(self._llh[0].lat)) * (xyz.z - self._xyz[0].z)
             pos = XYZ(truncate(x, 3), truncate(y, 3), truncate(z, 3))
             positions.append(pos)
+        self._clearAll()
         return positions
     
     def getLLH(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.connect((self._ip, self._port))
         data = ast.literal_eval(decode(server.recv(1024), 'utf-8'))
-        llh = LLH(data['latitude'], data['longitude'], data['altitude'])
+        llh = LLH(truncate(data['latitude'], 4), truncate(data['longitude'], 4), int(data['altitude']))
         server.close()
         self._llh.append(llh)
 

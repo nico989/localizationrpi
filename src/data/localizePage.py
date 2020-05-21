@@ -12,6 +12,7 @@ matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
+from collections import defaultdict
 
 class LocalizePage(tk.Frame):
     def __init__(self, controller):
@@ -20,19 +21,18 @@ class LocalizePage(tk.Frame):
         self._controller.rowconfigure(0, weight=1)
         self._controller.columnconfigure(0, weight=1)
         self.grid(sticky='N'+'S'+'W'+'E')
-        self._filterFields = ['kismet.device.base.macaddr', 'kismet.common.signal.last_signal']
         self._device = Device() 
-        self._distances = [] 
+        self._distances = defaultdict(list)
         self._initialPositions = []
         self._coordinates = Coordinates()
-        self._macAddr = '' #D8:CE:3A:F4:C5:19
         self._check = True
+        self._getInitialPositions()
         self._graph()     
         self._button()
         self._entryArea()
         self._label()
         self._resizable()
-
+        
     def _graph(self):
         self._figure = Figure(figsize=(5,5), dpi=150)
         
@@ -52,9 +52,7 @@ class LocalizePage(tk.Frame):
 
         ttk.Style().configure('TButton', background='#808080')
 
-        self._saveLabel = tk.StringVar()
-        self._saveLabel.set('SAVE IP')
-        self._saveIPButton = ttk.Button(self._buttonPane, textvariable=self._saveLabel, takefocus=False, command=lambda: self._saveIPMAc())
+        self._saveIPButton = ttk.Button(self._buttonPane, text='SAVE IP', takefocus=False, command=lambda: self._saveIP())
         self._saveIPButton.grid(row=0, column=0, padx=10, pady=10, sticky='E')
         self._locMacLabel = tk.StringVar()
         self._locMacLabel.set('GET FIRST POSITION')
@@ -79,21 +77,17 @@ class LocalizePage(tk.Frame):
         self.columnconfigure(0, weight=1)
         for x in range(5):
             self._buttonPane.columnconfigure(x, weight=1)
-    '''
+    
     def _getInitialPositions(self):
         self._initPointsFile = open('src/data/initialPoints.txt', 'r')
         for line in self._initPointsFile.readlines():
             point = tuple(map(float, line.strip('\r\n').split(',')))
-            self._initialPositions.append(point)
-    '''
-    def _saveIPMAc(self):
-        if self._saveLabel.get() == 'SAVE IP':
-            self._device.setIP(self._ipMacEntry.get())
-            self._coordinates.setIP(self._ipMacEntry.get())
-            self._saveLabel.set('SAVE MAC')
-        elif self._saveLabel.get() == 'SAVE MAC':
-            self._macAddr = self._ipMacEntry.get()
-            self._saveLabel.set('SAVE IP')
+            p = XYZ(point[0], point[1], point[2])
+            self._initialPositions.append(p)
+    
+    def _saveIP(self):
+        self._device.setIP(self._ipMacEntry.get())
+        self._coordinates.setIP(self._ipMacEntry.get())
 
     def _returnToDevicePage(self):
         self._saveLabel.set('SAVE IP')
@@ -102,29 +96,32 @@ class LocalizePage(tk.Frame):
 
     def _posThread(self):
         if self._check:
-            threading.Thread(target= self._getPosByMAC, daemon=True).start()
+            threading.Thread(target= self._getPos, daemon=True).start()
         else:
             tk.messagebox.showerror(title='ERROR', message='Another thread is running')
 
-    def _getPosByMAC(self):
+    def _getPos(self):
         try:
             self._check = False            
             if self._updateLabel():
-                self._coordinates.getLLH()
-                distance = self._device.calcDistanceAccurateSample(self._macAddr, 20)
-                if distance is not None:
-                    self._distances.append(distance)
-                    print(self._distances)
-                else:
-                    tk.messagebox.showerror(title='Error', message='MAC address is not correct')
+                #self._coordinates.getLLH()
+                devices = self._device.getClients()
+                macAddresses = self._device.filterFields(devices, 'kismet.device.base.macaddr')
+                for mac in macAddresses:
+                    distance = self._device.calcDistanceAccurateSec(mac, 10)
+                    if distance is not None:
+                        self._distances[mac].append(distance)
+                tk.messagebox.showinfo(title='INFO', message='Get position')
             else:
-                self._initialPositions = self._coordinates.positions()      
-            result = localize(self._initialPositions[0], self._distances[0], self._initialPositions[1], self._distances[1], self._initialPositions[2], self._distances[2])
-            if result is None:
-                tk.messagebox.showinfo(title='INFO', message='It does not find real points')
-            else:
-                self._displayGraph(result['radius'], result['meanPoint'], result['points'])
-            self._initialPositions.clear()
+                #self._initialPositions = self._coordinates.positions()
+                allMeanPoint = []
+                allResult = []
+                for mac in self._distances:
+                    result = localize(self._initialPositions[0], self._distances[mac][0], self._initialPositions[1], self._distances[mac][1], self._initialPositions[2], self._distances[mac][2])
+                    if result is not None:
+                        allMeanPoint.append(result['meanPoint'])  
+                        allResult.append(result['points'])         
+                self._displayGraphAll(allMeanPoint, allResult)
         except ConnError as conn:
             self._locMacLabel.set('GET FIRST POSITION')
             tk.messagebox.showerror(title='ERROR', message=conn)
@@ -145,27 +142,20 @@ class LocalizePage(tk.Frame):
             self._locMacLabel.set('GET FIRST POSITION')
             return False
 
-    def _displayGraph(self, radius, centerPoint, points):
-        self._subplot.clear() 
-
+    def _displayGraphAll(self, centerPoints, points):
+        # TODO: find a way to clear the graph
         allY = []
-        for point in points:
-            allY.append(point.y)
-            scatter1 = self._subplot.scatter(point.x, point.y, point.z, color='red', marker='o')
-        
+
         for initial in self._initialPositions:
             allY.append(initial.y)
-            scatter2 = self._subplot.scatter(initial.x, initial.y, initial.z, color='blue', marker='o')
-            self._subplot.plot([initial.x, centerPoint.x], [initial.y, centerPoint.y], [initial.z, centerPoint.z], color='black')
-            self._subplot.text(numpy.mean([initial.x, centerPoint.x]), numpy.mean([initial.y, centerPoint.y]), numpy.mean([initial.z, centerPoint.z]), str(truncate(distanceBetweenTwoPoints(initial, centerPoint), 3)))
+            scatter1 = self._subplot.scatter(initial.x, initial.y, initial.z, color='blue', marker='o')
+        
+        for centerPoint in centerPoints:
+            allY.append(centerPoint.y)
+            scatter2 = self._subplot.scatter(centerPoint.x, centerPoint.y, centerPoint.z, color='green', marker='o')
 
-        scatter3 = self._subplot.scatter(centerPoint.x, centerPoint.y, centerPoint.z, color='green', marker='o')
-        u = numpy.linspace(0, 2 * numpy.pi, 100)
-        v = numpy.linspace(0, numpy.pi, 100)
-        x = (radius * numpy.outer(numpy.cos(u), numpy.sin(v))) + centerPoint.x
-        y = (radius * numpy.outer(numpy.sin(u), numpy.sin(v))) + centerPoint.y
-        z = (radius * numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v))) + centerPoint.z
-        self._subplot.plot_surface(x, y, z, rstride=1, cstride=1, color='lightblue', shade=0, alpha=0.5)
+        for index,mac in enumerate(self._distances):
+           self._subplot.text(centerPoints[index].x, centerPoints[index].y, centerPoints[index].z, mac)
 
         self._subplot.set_xlabel('x axis')
         self._subplot.set_ylabel('y axis')
@@ -175,6 +165,46 @@ class LocalizePage(tk.Frame):
         self._subplot.yaxis._axinfo['juggled'] = (1,1,1)
         self._subplot.zaxis._axinfo['juggled'] = (2,2,2)
 
+        self._subplot.legend([scatter1, scatter2], ['Initial points', 'Probable devices'])
+
+        self._canvas.get_tk_widget().grid(row=0, column=0, sticky='N'+'S'+'W'+'E')
+
+        self._initialPositions.clear()     
+
+    def _displayGraph(self, radius, centerPoints, points):
+        # TODO: find a way to clear the graph
+        allY = []
+
+        for point in points:
+            allY.append(point.y)
+            scatter1 = self._subplot.scatter(point.x, point.y, point.z, color='red', marker='o')
+
+        for initial in self._initialPositions:
+            allY.append(initial.y)
+            scatter2 = self._subplot.scatter(initial.x, initial.y, initial.z, color='blue', marker='o')
+            self._subplot.plot([initial.x, centerPoint.x], [initial.y, centerPoint.y], [initial.z, centerPoint.z], color='black')
+            self._subplot.text(numpy.mean([initial.x, centerPoint.x]), numpy.mean([initial.y, centerPoint.y]), numpy.mean([initial.z, centerPoint.z]), str(truncate(distanceBetweenTwoPoints(initial, centerPoint), 3)))
+
+            scatter3 = self._subplot.scatter(centerPoint.x, centerPoint.y, centerPoint.z, color='green', marker='o')
+         
+        u = numpy.linspace(0, 2 * numpy.pi, 100)
+        v = numpy.linspace(0, numpy.pi, 100)
+        x = (radius * numpy.outer(numpy.cos(u), numpy.sin(v))) + centerPoint.x
+        y = (radius * numpy.outer(numpy.sin(u), numpy.sin(v))) + centerPoint.y
+        z = (radius * numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v))) + centerPoint.z
+        self._subplot.plot_surface(x, y, z, rstride=1, cstride=1, color='lightblue', shade=0, alpha=0.5)      
+
+        self._subplot.set_xlabel('x axis')
+        self._subplot.set_ylabel('y axis')
+        self._subplot.set_zlabel('z axis')
+        self._subplot.set_ylim(max(allY) + 1, min(allY) - 1) #adjust Y
+        self._subplot.xaxis._axinfo['juggled'] = (0,0,0)
+        self._subplot.yaxis._axinfo['juggled'] = (1,1,1)
+        self._subplot.zaxis._axinfo['juggled'] = (2,2,2)
+
+        
         self._subplot.legend([scatter1, scatter2, scatter3], ['Probable points', 'Initial points', 'Center of area: ' + str(centerPoint.x) + ',' + str(centerPoint.y) + ',' + str(centerPoint.z)])
 
-        self._canvas.get_tk_widget().grid(row=0, column=0, sticky='N'+'S'+'W'+'E')     
+        self._canvas.get_tk_widget().grid(row=0, column=0, sticky='N'+'S'+'W'+'E')
+
+        self._initialPositions.clear()     

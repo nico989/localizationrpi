@@ -37,7 +37,6 @@ def localize(p1, r1, p2, r2, p3, r3):
     sphere2 = sympy.Eq((x-p2.x)**2+(y-p2.y)**2+(z-p2.z)**2,r2**2)
     sphere3 = sympy.Eq((x-p3.x)**2+(y-p3.y)**2+(z-p3.z)**2,r3**2)
     results = sympy.solve([sphere1,sphere2,sphere3],(x,y,z))
-    print('Result:\n' + str(results))
 
     coordinates = []
     if len(results) is not 0:
@@ -73,12 +72,3 @@ def localize(p1, r1, p2, r2, p3, r3):
         'points': coordinates
     }
     return res
-
-if __name__ == '__main__':
-    p1 = XYZ(0,0,0)
-    p2 = XYZ(1,1,1)
-    p3 = XYZ(1,0,0)
-    d = localize(p1, 1, p2, 1, p3, 1)
-    for i in d['points']:
-        print(i)
-    

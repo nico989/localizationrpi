@@ -1,8 +1,8 @@
-import tkinter as tk
-import tkinter.ttk as ttk
 from device import Device
 from exception import HTTPError, ConnError
 from mathOperation import convertIntoGhz
+import tkinter as tk
+import tkinter.ttk as ttk
 import threading
 
 class DevicePage(tk.Frame):
@@ -90,7 +90,6 @@ class DevicePage(tk.Frame):
             if len(threading.enumerate()) == 1:
                 self._cleanAll()
                 self._device.setIP(self._ipEntry.get())
-                #devices = self._device.getClientsLastTimeSec(5*60)
                 devices = self._device.getClients()
                 for index,device in enumerate(devices):
                     t = threading.Thread(target=self._fillTable, args=(index, device,), daemon=True)
