@@ -37,7 +37,7 @@ class Device(Req):
         return self.post(self._paths[1], self._fields)   
 
     def getDeviceByMAC(self, macAddr):
-        return self.post(self._paths[3] + macAddr + self._paths[4] , self._fields)
+        return self.post(self._paths[3] + macAddr + self._paths[4], self._fields)
 
     def getClients(self):
         clients = []
@@ -67,7 +67,7 @@ class Device(Req):
             listDev.append(device[field])
         return listDev
     
-    def calcDistanceIstant(self, power):
+    def calcDistanceInstant(self, power):
         distance = pow(10, (self._A-power)/self._K)
         return truncate(distance, 3)
 
@@ -78,7 +78,7 @@ class Device(Req):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
             meanPower = arithmeticMean(sampleRSSI)
-            return self.calcDistanceIstant(meanPower)
+            return self.calcDistanceInstant(meanPower)
         except HTTPError as http:
             return
         except ConnError as conn:
@@ -92,7 +92,7 @@ class Device(Req):
                 device = self.getDeviceByMAC(macAddr)
                 sampleRSSI.append(device[0]['kismet.common.signal.last_signal'])
             meanPower = arithmeticMean(sampleRSSI)
-            return self.calcDistanceIstant(meanPower)
+            return self.calcDistanceInstant(meanPower)
         except HTTPError as http:
             return
         except ConnError as conn:

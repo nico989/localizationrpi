@@ -1,6 +1,6 @@
 from device import Device
 from formatPoint import XYZ
-from exception import ConnError
+from exception import ConnError, HTTPError
 from mathOperation import localize, distanceBetweenTwoPoints, truncate
 import tkinter as tk  
 import tkinter.ttk as ttk
@@ -121,6 +121,9 @@ class LocalizePage(tk.Frame):
         except ConnError as conn:
             self._locMacLabel.set('GET FIRST POSITION')
             tk.messagebox.showerror(title='ERROR', message=conn)
+        except HTTPError as http:
+            self._locMacLabel.set('GET FIRST POSITION')
+            tk.messagebox.showerror(title='ERROR', message=http)
         finally:
             self._check = True                                  
        
@@ -138,7 +141,7 @@ class LocalizePage(tk.Frame):
             self._locMacLabel.set('GET FIRST POSITION')
             return False
 
-    def _displayGraphAll(self, centerPoints, points):
+    def _displayGraphAll(self, centerPoint, points):
         # TODO: find a way to clear the graph
         allY = []
 
@@ -151,7 +154,7 @@ class LocalizePage(tk.Frame):
             scatter2 = self._subplot.scatter(centerPoint.x, centerPoint.y, centerPoint.z, color='green', marker='o')
 
         for index,mac in enumerate(self._distances):
-           self._subplot.text(centerPoints[index].x, centerPoints[index].y, centerPoints[index].z, mac)
+           self._subplot.text(centerPoint[index].x, centerPoint[index].y, centerPoint[index].z, mac)
 
         self._subplot.set_xlabel('x axis')
         self._subplot.set_ylabel('y axis')
@@ -167,7 +170,7 @@ class LocalizePage(tk.Frame):
 
         self._initialPositions.clear()     
 
-    def _displayGraph(self, radius, centerPoints, points):
+    def _displayGraph(self, radius, centerPoint, points):
         # TODO: find a way to clear the graph
         allY = []
 

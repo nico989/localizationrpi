@@ -108,7 +108,7 @@ class DevicePage(tk.Frame):
         if distance is not None:
             self._tv.insert('', 'end', iid=index, values=(device[self._filterFields[0]], device[self._filterFields[1]], device[self._filterFields[2]], 
                                                         convertIntoGhz(device[self._filterFields[3]]), device[self._filterFields[4]], 
-                                                        self._device.calcDistanceIstant(device[self._filterFields[4]]), distance))
+                                                        self._device.calcDistanceInstant(device[self._filterFields[4]]), distance))
         self._semaphore.release()
 
     def _macSearch(self):
@@ -122,10 +122,10 @@ class DevicePage(tk.Frame):
 
     def _indoorOutdoor(self):
         if self._inOut.get() == 'INDOOR':
-            self._device.setOutdoor()
+            self._device.setIndoor()
             self._inOut.set('OUTDOOR')
         elif self._inOut.get() == 'OUTDOOR':
-            self._device.setIndoor()
+            self._device.setOutdoor()
             self._inOut.set('INDOOR')
 
     def _cleanAll(self):

@@ -5,7 +5,7 @@ class Req:
     def __init__(self):
         self._ipAddr = 'localhost'
         self._head = {'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'}
-        self._users = 'http://pi:caramella98@'
+        self._user = 'http://pi:caramella98@'
         self._port = 2501
 
     def setIP(self, ip):
@@ -15,7 +15,7 @@ class Req:
         return self._ipAddr
 
     def get(self, path, params):
-        url = self._users + self._ipAddr + ':' + str(self._port) + path
+        url = self._user + self._ipAddr + ':' + str(self._port) + path
         try:
             response = requests.get(url=url, params=params)
             response.raise_for_status()
@@ -26,7 +26,7 @@ class Req:
             raise ConnError('Wrong IP')
 
     def post(self, path, data):
-        url = self._users + self._ipAddr + ':' + str(self._port) + path
+        url = self._user + self._ipAddr + ':' + str(self._port) + path
         dat = 'json=' + json.dumps(data)
         try:
             response = requests.post(url=url, headers=self._head, data=dat)
