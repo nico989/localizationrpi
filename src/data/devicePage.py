@@ -28,9 +28,9 @@ class DevicePage(tk.Frame):
         self._resizable()
 
     def _table(self):
-        self._columns = ('manuf', 'mac', 'channel', 'frequency', 'rssi', 'distanceIstant', 'distanceAccurate') 
+        self._columns = ('manuf', 'mac', 'channel', 'frequency', 'rssi', 'distanceInstant', 'distanceAccurate') 
         self._tv = ttk.Treeview(self, columns=self._columns, show='headings')
-        self._labelName = ['Manufacturer', 'Mac address', 'Channel', 'Frequency [GHz]', 'RSSI', 'Distance Istant [m]', 'Distance Accurate [m]']
+        self._labelName = ['Manufacturer', 'Mac address', 'Channel', 'Frequency [GHz]', 'RSSI', 'Distance Instant [m]', 'Distance Accurate [m]']
         for index, col in enumerate(self._columns):
             if index > 4:
                 self._tv.heading(col, text=self._labelName[index], anchor='center', command=lambda _col=col:self._sort(index,_col, False))
