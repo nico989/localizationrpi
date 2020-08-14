@@ -1,4 +1,5 @@
 # Server GPS to run on RPI at boot to have latitude, longitude and altitude from GPS module
+# Edit sudo nano /etc/profile at the end with sudo python /home/pi/serverGPS.py & for running the script at boot
 
 import socket
 import netifaces
